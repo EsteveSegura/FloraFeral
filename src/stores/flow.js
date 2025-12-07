@@ -71,6 +71,46 @@ export const useFlowStore = defineStore('flow', {
 
     clearError() {
       this.error = null
+    },
+
+    updateNodePosition(nodeId, position) {
+      const node = this.nodes.find(node => node.id === nodeId)
+      if (node) {
+        node.position = position
+      }
+    },
+
+    initMockNodes() {
+      // Nodos de ejemplo para pruebas
+      this.nodes = [
+        {
+          id: 'node-1',
+          type: 'image',
+          position: { x: 100, y: 100 },
+          data: { label: 'Imagen 1' }
+        },
+        {
+          id: 'node-2',
+          type: 'generator',
+          position: { x: 400, y: 100 },
+          data: { label: 'Generador 1', prompt: '' }
+        },
+        {
+          id: 'node-3',
+          type: 'generator',
+          position: { x: 250, y: 300 },
+          data: { label: 'Generador 2', prompt: '' }
+        }
+      ]
+
+      // Edge de ejemplo
+      this.edges = [
+        {
+          id: 'edge-1',
+          source: 'node-1',
+          target: 'node-2'
+        }
+      ]
     }
   }
 })
