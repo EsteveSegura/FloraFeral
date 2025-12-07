@@ -1,4 +1,5 @@
-import { PORT_TYPES, getNodeIOConfig } from './node-shapes'
+import { PORT_TYPES } from './node-shapes'
+import nodeRegistry from './node-registry'
 
 /**
  * Validates if two port types are compatible to connect
@@ -13,16 +14,33 @@ export function canConnect(sourcePortType, targetPortType) {
 
 /**
  * Validates if two nodes can connect based on their types
+ * Uses NodeRegistry to get node definitions
  * @param {string} sourceNodeType - Source node type
  * @param {string} targetNodeType - Target node type
  * @returns {Object} { valid: boolean, reason?: string }
  */
 export function canNodesConnect(sourceNodeType, targetNodeType) {
-  const sourceConfig = getNodeIOConfig(sourceNodeType)
-  const targetConfig = getNodeIOConfig(targetNodeType)
+  // Get node definitions from registry
+  const sourceDef = nodeRegistry.getNodeDef(sourceNodeType)
+  const targetDef = nodeRegistry.getNodeDef(targetNodeType)
+
+  // Check if node types are registered
+  if (!sourceDef) {
+    return {
+      valid: false,
+      reason: `Source node type "${sourceNodeType}" not found in registry`
+    }
+  }
+
+  if (!targetDef) {
+    return {
+      valid: false,
+      reason: `Target node type "${targetNodeType}" not found in registry`
+    }
+  }
 
   // Check if source node has outputs
-  if (sourceConfig.outputs.length === 0) {
+  if (!sourceDef.outputs || sourceDef.outputs.length === 0) {
     return {
       valid: false,
       reason: 'Source node has no output ports'
@@ -30,7 +48,7 @@ export function canNodesConnect(sourceNodeType, targetNodeType) {
   }
 
   // Check if target node has inputs
-  if (targetConfig.inputs.length === 0) {
+  if (!targetDef.inputs || targetDef.inputs.length === 0) {
     return {
       valid: false,
       reason: 'Target node has no input ports'
@@ -38,8 +56,8 @@ export function canNodesConnect(sourceNodeType, targetNodeType) {
   }
 
   // Check if there's at least one compatible port type
-  const hasCompatiblePort = sourceConfig.outputs.some(outputType =>
-    targetConfig.inputs.some(inputType => canConnect(outputType, inputType))
+  const hasCompatiblePort = sourceDef.outputs.some(outputType =>
+    targetDef.inputs.some(inputType => canConnect(outputType, inputType))
   )
 
   if (!hasCompatiblePort) {
