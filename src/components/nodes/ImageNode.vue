@@ -2,8 +2,8 @@
   <BaseNode
     :id="id"
     :type="type"
-    :data="data"
-    :label="data.label"
+    :data="nodeData"
+    :label="nodeData.label"
     :inputs="[]"
     :outputs="['image']"
     icon="📷"
@@ -18,11 +18,11 @@
       @dragleave.prevent="isDragging = false"
     >
       <div
-        v-if="data.src"
+        v-if="nodeData.src"
         class="image-preview"
         :class="{ dragging: isDragging }"
       >
-        <img :src="data.src" :alt="data.name || data.label" />
+        <img :src="nodeData.src" :alt="nodeData.name || nodeData.label" />
       </div>
       <div
         v-else
@@ -34,19 +34,19 @@
       </div>
 
       <button class="upload-button" @click="handleUpload">
-        {{ data.src ? 'Change Image' : 'Upload Image' }}
+        {{ nodeData.src ? 'Change Image' : 'Upload Image' }}
       </button>
 
-      <div v-if="data.name" class="image-info">
+      <div v-if="nodeData.name" class="image-info">
         <span class="info-label">File:</span>
-        <span class="info-value">{{ data.name }}</span>
+        <span class="info-value">{{ nodeData.name }}</span>
       </div>
     </div>
   </BaseNode>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useFlowStore } from '@/stores/flow'
 import BaseNode from '@/components/base/BaseNode.vue'
 
@@ -71,6 +71,12 @@ const props = defineProps({
 
 const flowStore = useFlowStore()
 const isDragging = ref(false)
+
+// Get the current node data directly from store for reactivity
+const nodeData = computed(() => {
+  const node = flowStore.getNodeById(props.id)
+  return node ? node.data : props.data
+})
 
 function handleUpload() {
   const input = document.createElement('input')

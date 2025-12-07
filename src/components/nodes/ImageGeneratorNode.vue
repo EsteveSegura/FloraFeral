@@ -2,11 +2,12 @@
   <BaseNode
     :id="id"
     :type="type"
-    :data="data"
-    :label="data.label"
+    :data="nodeData"
+    :label="nodeData.label"
     :inputs="['image']"
     :outputs="['image']"
     :loading="isGenerating"
+    :error="nodeData.error"
     icon="✨"
     :selected="selected"
     @action:run="handleGenerate"
@@ -27,8 +28,8 @@
       </div>
 
       <!-- Generated image preview -->
-      <div v-if="data.lastOutputSrc" class="image-preview">
-        <img :src="data.lastOutputSrc" :alt="data.label" />
+      <div v-if="nodeData.lastOutputSrc" class="image-preview">
+        <img :src="nodeData.lastOutputSrc" :alt="nodeData.label" />
       </div>
       <div v-else class="image-placeholder">
         <span class="placeholder-icon">✨</span>
@@ -48,13 +49,18 @@
       </div>
 
       <!-- Generate button -->
-      <button
-        class="generate-button"
-        :disabled="isGenerating || !localPrompt.trim()"
-        @click="handleGenerate"
-      >
-        {{ isGenerating ? 'Generating...' : 'Generate Image' }}
-      </button>
+      <div class="generate-section">
+        <button
+          class="generate-button"
+          :disabled="isGenerating || !localPrompt.trim()"
+          @click="handleGenerate"
+        >
+          {{ isGenerating ? 'Generating...' : 'Generate Image' }}
+        </button>
+        <div v-if="connectedImages.length > 0" class="input-info">
+          Using {{ connectedImages.length }} input {{ connectedImages.length === 1 ? 'image' : 'images' }}
+        </div>
+      </div>
     </div>
   </BaseNode>
 </template>
@@ -63,6 +69,7 @@
 import { ref, computed, watch } from 'vue'
 import { useFlowStore } from '@/stores/flow'
 import BaseNode from '@/components/base/BaseNode.vue'
+import replicateService from '@/services/replicate'
 
 const props = defineProps({
   id: {
@@ -86,6 +93,19 @@ const props = defineProps({
 const flowStore = useFlowStore()
 const localPrompt = ref(props.data.prompt || '')
 const isGenerating = ref(false)
+
+// Get the current node data directly from store for reactivity
+const nodeData = computed(() => {
+  const node = flowStore.getNodeById(props.id)
+  const data = node ? node.data : props.data
+
+  // Debug logging for preview image
+  if (data.lastOutputSrc && data.lastOutputSrc !== props.data.lastOutputSrc) {
+    console.log('[ImageGeneratorNode] nodeData updated with lastOutputSrc:', data.lastOutputSrc.substring(0, 60) + '...')
+  }
+
+  return data
+})
 
 // Get connected images from upstream nodes
 const connectedImages = computed(() => {
@@ -114,14 +134,14 @@ const connectedImages = computed(() => {
 })
 
 // Watch for external changes to prompt
-watch(() => props.data.prompt, (newPrompt) => {
+watch(() => nodeData.value.prompt, (newPrompt) => {
   if (newPrompt !== localPrompt.value) {
     localPrompt.value = newPrompt
   }
 })
 
 function updatePrompt() {
-  if (localPrompt.value !== props.data.prompt) {
+  if (localPrompt.value !== nodeData.value.prompt) {
     flowStore.updateNodeData(props.id, {
       prompt: localPrompt.value
     })
@@ -139,24 +159,63 @@ async function handleGenerate() {
       prompt: localPrompt.value
     })
 
-    // TODO: Replace with actual API call to Replicate
-    // Simulate generation delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Prepare input images from connected nodes
+    // The API accepts HTTP URLs and data URLs (base64)
+    const inputImages = connectedImages.value
+      .map(img => img.src)
+      .filter(src => {
+        if (!src) return false
+        // Accept HTTP/HTTPS URLs and data URLs
+        return src.startsWith('http://') ||
+               src.startsWith('https://') ||
+               src.startsWith('data:')
+      })
 
-    // TODO: Replace with actual generated image
-    // For now, use a placeholder
-    const mockGeneratedImage = `https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Generated+${Date.now()}`
+    console.log('Input images for generation:', inputImages.length, 'images')
 
-    flowStore.updateNodeData(props.id, {
+    // Call Replicate API
+    const result = await replicateService.generateImage({
       prompt: localPrompt.value,
-      lastOutputSrc: mockGeneratedImage,
-      model: 'mock-model-v1',
+      imageSrc: inputImages.length > 0 ? inputImages : null,
+      model: 'nano-banana-pro',
       params: {
-        connectedImagesCount: connectedImages.value.length
+        resolution: '2K',
+        output_format: 'jpg'
       }
     })
+
+    console.log('Generation result:', result)
+    console.log('Image URL:', result.imageUrl)
+
+    // Update node with generated image
+    flowStore.updateNodeData(props.id, {
+      prompt: localPrompt.value,
+      lastOutputSrc: result.imageUrl,
+      model: result.model,
+      generationId: result.id,
+      params: {
+        inputImagesCount: inputImages.length,
+        connectedNodesCount: connectedImages.value.length,
+        usedInputImages: inputImages.length > 0,
+        isMock: result.isMock || false
+      }
+    })
+
+    console.log('Updated node data:', flowStore.getNodeById(props.id).data)
   } catch (error) {
     console.error('Error generating image:', error)
+
+    // Show error to user
+    flowStore.updateNodeData(props.id, {
+      error: error.message || 'Failed to generate image'
+    })
+
+    // Clear error after 5 seconds
+    setTimeout(() => {
+      flowStore.updateNodeData(props.id, {
+        error: null
+      })
+    }, 5000)
   } finally {
     isGenerating.value = false
   }
@@ -270,6 +329,12 @@ async function handleGenerate() {
   border-color: #4CAF50;
 }
 
+.generate-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .generate-button {
   width: 100%;
   padding: 0.6rem;
@@ -290,5 +355,15 @@ async function handleGenerate() {
 .generate-button:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+.input-info {
+  font-size: 0.75rem;
+  color: #666;
+  text-align: center;
+  padding: 0.25rem;
+  background: #e3f2fd;
+  border-radius: 4px;
+  font-weight: 500;
 }
 </style>

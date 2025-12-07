@@ -23,6 +23,8 @@
         :default-viewport="{ zoom: 1 }"
         :min-zoom="0.2"
         :max-zoom="4"
+        :delete-key-code="['Delete', 'Backspace']"
+        :multi-selection-key-code="['Meta', 'Control']"
         @connect="onConnect"
         @node-click="onNodeClick"
         @node-drag-stop="onNodeDragStop"
@@ -36,6 +38,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -46,6 +49,7 @@ import nodeRegistry from '@/lib/node-registry'
 import '@/styles/FlowCanvasView.css'
 
 const flowStore = useFlowStore()
+const { nodes, edges } = storeToRefs(flowStore)
 
 // Create node types mapping from registry
 const nodeTypes = {}
@@ -71,10 +75,6 @@ onMounted(() => {
     flowStore.initMockNodes()
   }
 })
-
-// Computed para sincronizar con el store
-const nodes = computed(() => flowStore.nodes)
-const edges = computed(() => flowStore.edges)
 
 // Guardar posición cuando se termina de arrastrar un nodo
 function onNodeDragStop(event) {

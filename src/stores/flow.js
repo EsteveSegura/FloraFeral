@@ -34,9 +34,13 @@ export const useFlowStore = defineStore('flow', {
     },
 
     updateNodeData(nodeId, data) {
-      const node = this.nodes.find(node => node.id === nodeId)
-      if (node) {
-        node.data = { ...node.data, ...data }
+      const nodeIndex = this.nodes.findIndex(node => node.id === nodeId)
+      if (nodeIndex !== -1) {
+        // Replace the entire node object to trigger reactivity
+        this.nodes[nodeIndex] = {
+          ...this.nodes[nodeIndex],
+          data: { ...this.nodes[nodeIndex].data, ...data }
+        }
       }
     },
 
@@ -75,9 +79,13 @@ export const useFlowStore = defineStore('flow', {
     },
 
     updateNodePosition(nodeId, position) {
-      const node = this.nodes.find(node => node.id === nodeId)
-      if (node) {
-        node.position = position
+      const nodeIndex = this.nodes.findIndex(node => node.id === nodeId)
+      if (nodeIndex !== -1) {
+        // Replace the entire node object to trigger reactivity
+        this.nodes[nodeIndex] = {
+          ...this.nodes[nodeIndex],
+          position
+        }
       }
     },
 
