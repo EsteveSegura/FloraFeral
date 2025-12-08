@@ -4,12 +4,14 @@
  */
 
 import NANO_BANANA_PRO from './models/nano-banana-pro'
+import SEEDREAM_4 from './models/seedream-4'
 
 /**
  * Registry of available models
  */
 const MODELS = {
   'nano-banana-pro': NANO_BANANA_PRO,
+  'seedream-4': SEEDREAM_4,
   'default': NANO_BANANA_PRO
 }
 
@@ -79,6 +81,26 @@ class ReplicateService {
    */
   listModels() {
     return Object.keys(MODELS).filter(id => id !== 'default')
+  }
+
+  /**
+   * Get UI schema for a model
+   * @param {string} modelId - Model ID
+   * @returns {Object} UI schema with controls definition
+   */
+  getModelUiSchema(modelId) {
+    const model = this.getModel(modelId)
+    return model.uiSchema || null
+  }
+
+  /**
+   * Get default parameters for a model
+   * @param {string} modelId - Model ID
+   * @returns {Object} Default parameters
+   */
+  getModelDefaults(modelId) {
+    const model = this.getModel(modelId)
+    return { ...model.defaults }
   }
 
   /**

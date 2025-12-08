@@ -16,8 +16,37 @@ export const NANO_BANANA_PRO = {
   defaults: {
     resolution: '2K',
     aspect_ratio: 'match_input_image',
-    output_format: 'jpg',
+    output_format: 'png',
     safety_filter_level: 'block_only_high'
+  },
+
+  /**
+   * UI Schema - defines controls for the navbar
+   * Used to dynamically render UI controls for model parameters
+   */
+  uiSchema: {
+    id: 'nano-banana-pro',
+    label: 'Nano Banana Pro',
+    controls: [
+      {
+        key: 'aspect_ratio',
+        label: 'Aspect Ratio',
+        type: 'select',
+        enum: [
+          'match_input_image',
+          '1:1', '2:3', '3:2', '3:4', '4:3',
+          '4:5', '5:4', '9:16', '16:9', '21:9'
+        ],
+        default: 'match_input_image'
+      },
+      {
+        key: 'resolution',
+        label: 'Resolution',
+        type: 'select',
+        enum: ['1K', '2K', '4K'],
+        default: '2K'
+      }
+    ]
   },
 
   /**
