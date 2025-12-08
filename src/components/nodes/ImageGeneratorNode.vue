@@ -1,4 +1,80 @@
 <template>
+  <!-- Node Toolbar -->
+  <NodeToolbar :is-visible="selected" :position="Position.Top" :offset="10">
+    <div class="node-toolbar-content">
+      <!-- Model Selector -->
+      <div class="toolbar-control">
+        <label for="model-select">Model:</label>
+        <select
+          id="model-select"
+          :value="currentModel"
+          :disabled="availableModels.length <= 1"
+          @change="onModelChange"
+        >
+          <option
+            v-for="modelId in availableModels"
+            :key="modelId"
+            :value="modelId"
+          >
+            {{ getModelLabel(modelId) }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Dynamic Controls from uiSchema -->
+      <div
+        v-for="control in controls"
+        :key="control.key"
+        class="toolbar-control"
+      >
+        <label :for="`control-${control.key}`">{{ control.label }}:</label>
+
+        <!-- Select Control -->
+        <select
+          v-if="control.type === 'select'"
+          :id="`control-${control.key}`"
+          :value="getParamValue(control.key, control.default)"
+          @change="onParamChange(control.key, $event.target.value)"
+        >
+          <option
+            v-for="option in control.enum"
+            :key="option"
+            :value="option"
+          >
+            {{ option }}
+          </option>
+        </select>
+
+        <!-- Text Input -->
+        <input
+          v-else-if="control.type === 'text'"
+          :id="`control-${control.key}`"
+          type="text"
+          :value="getParamValue(control.key, control.default)"
+          @input="onParamChange(control.key, $event.target.value)"
+        />
+
+        <!-- Number Input -->
+        <input
+          v-else-if="control.type === 'number'"
+          :id="`control-${control.key}`"
+          type="number"
+          :value="getParamValue(control.key, control.default)"
+          @input="onParamChange(control.key, parseFloat($event.target.value))"
+        />
+
+        <!-- Checkbox -->
+        <input
+          v-else-if="control.type === 'checkbox'"
+          :id="`control-${control.key}`"
+          type="checkbox"
+          :checked="getParamValue(control.key, control.default)"
+          @change="onParamChange(control.key, $event.target.checked)"
+        />
+      </div>
+    </div>
+  </NodeToolbar>
+
   <BaseNode
     :id="id"
     :type="type"
@@ -68,6 +144,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useFlowStore } from '@/stores/flow'
+import { NodeToolbar } from '@vue-flow/node-toolbar'
+import { Position } from '@vue-flow/core'
 import BaseNode from '@/components/base/BaseNode.vue'
 import replicateService from '@/services/replicate'
 
@@ -133,6 +211,55 @@ const connectedImages = computed(() => {
   return images
 })
 
+// Toolbar controls - Available models
+const availableModels = computed(() => replicateService.listModels())
+
+// Current model from node data
+const currentModel = computed(() => nodeData.value.model || 'nano-banana-pro')
+
+// Get UI schema for current model
+const uiSchema = computed(() => {
+  if (!currentModel.value) return null
+  return replicateService.getModelUiSchema(currentModel.value)
+})
+
+// Controls to render
+const controls = computed(() => uiSchema.value?.controls || [])
+
+// Get model label from uiSchema
+function getModelLabel(modelId) {
+  const schema = replicateService.getModelUiSchema(modelId)
+  return schema?.label || modelId
+}
+
+// Get current parameter value
+function getParamValue(key, defaultValue) {
+  return nodeData.value.params?.[key] ?? defaultValue
+}
+
+// Handle model change
+function onModelChange(event) {
+  const newModel = event.target.value
+  const defaults = replicateService.getModelDefaults(newModel)
+
+  flowStore.updateNodeData(props.id, {
+    model: newModel,
+    params: defaults
+  })
+}
+
+// Handle parameter change
+function onParamChange(key, value) {
+  const currentParams = nodeData.value.params || {}
+
+  flowStore.updateNodeData(props.id, {
+    params: {
+      ...currentParams,
+      [key]: value
+    }
+  })
+}
+
 // Watch for external changes to prompt
 watch(() => nodeData.value.prompt, (newPrompt) => {
   if (newPrompt !== localPrompt.value) {
@@ -173,15 +300,19 @@ async function handleGenerate() {
 
     console.log('Input images for generation:', inputImages.length, 'images')
 
+    // Get model and params from node data
+    const model = nodeData.value.model || 'nano-banana-pro'
+    const params = nodeData.value.params || {}
+
+    console.log('Using model:', model)
+    console.log('With params:', params)
+
     // Call Replicate API
     const result = await replicateService.generateImage({
       prompt: localPrompt.value,
       imageSrc: inputImages.length > 0 ? inputImages : null,
-      model: 'nano-banana-pro',
-      params: {
-        resolution: '2K',
-        output_format: 'jpg'
-      }
+      model,
+      params
     })
 
     console.log('Generation result:', result)
@@ -365,5 +496,63 @@ async function handleGenerate() {
   background: #e3f2fd;
   border-radius: 4px;
   font-weight: 500;
+}
+
+/* Node Toolbar Styles */
+.node-toolbar-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border: 2px solid #4CAF50;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.toolbar-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toolbar-control label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+}
+
+.toolbar-control select,
+.toolbar-control input[type="text"],
+.toolbar-control input[type="number"] {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background: white;
+  min-width: 120px;
+  transition: border-color 0.2s;
+}
+
+.toolbar-control select:focus,
+.toolbar-control input[type="text"]:focus,
+.toolbar-control input[type="number"]:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.toolbar-control select:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.toolbar-control input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
 }
 </style>

@@ -47,7 +47,7 @@
 .toolbar {
   position: absolute;
   top: 1rem;
-  left: 1rem;
+  right: 1rem;
   z-index: 10;
   display: flex;
   gap: 0.5rem;

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { createNode, createEdge, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
+import replicateService from '@/services/replicate'
 
 export const useFlowStore = defineStore('flow', {
   state: () => ({
@@ -103,14 +104,24 @@ export const useFlowStore = defineStore('flow', {
           'node-2',
           NODE_TYPES.IMAGE_GENERATOR,
           { x: 400, y: 100 },
-          { label: 'Generator 1', prompt: '' },
+          {
+            label: 'Generator 1',
+            prompt: '',
+            model: 'nano-banana-pro',
+            params: replicateService.getModelDefaults('nano-banana-pro')
+          },
           getNodeIOConfig(NODE_TYPES.IMAGE_GENERATOR)
         ),
         createNode(
           'node-3',
           NODE_TYPES.IMAGE_GENERATOR,
           { x: 250, y: 300 },
-          { label: 'Generator 2', prompt: '' },
+          {
+            label: 'Generator 2',
+            prompt: '',
+            model: 'nano-banana-pro',
+            params: replicateService.getModelDefaults('nano-banana-pro')
+          },
           getNodeIOConfig(NODE_TYPES.IMAGE_GENERATOR)
         )
       ]

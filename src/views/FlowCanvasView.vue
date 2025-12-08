@@ -64,6 +64,7 @@ import { validateConnection } from '@/lib/connection'
 import { createEdge, createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
 import { downloadFlow, loadFlowFromFile } from '@/lib/flow-io'
+import replicateService from '@/services/replicate'
 import '@/styles/FlowCanvasView.css'
 
 const flowStore = useFlowStore()
@@ -136,9 +137,11 @@ function onDrop(event) {
     label: `New ${nodeDef.label}`
   }
 
-  // Add prompt field for generator nodes
+  // Add prompt field and model params for generator nodes
   if (draggedNodeType === NODE_TYPES.IMAGE_GENERATOR) {
     data.prompt = ''
+    data.model = 'nano-banana-pro'
+    data.params = replicateService.getModelDefaults('nano-banana-pro')
   }
 
   // Create new node using the schema
