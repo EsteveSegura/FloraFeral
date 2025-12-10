@@ -8,6 +8,7 @@ import { NODE_TYPES, PORT_TYPES } from './node-shapes'
 import ImageNode from '@/components/nodes/ImageNode.vue'
 import ImageGeneratorNode from '@/components/nodes/ImageGeneratorNode.vue'
 import PromptNode from '@/components/nodes/PromptNode.vue'
+import DiffNode from '@/components/nodes/DiffNode.vue'
 
 /**
  * Register all available node types
@@ -55,6 +56,20 @@ export function registerAllNodes() {
     }
   })
 
+  // Register Diff Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.DIFF,
+    label: 'Image Diff',
+    description: 'Compare two images and visualize differences with inverted colors',
+    inputs: [PORT_TYPES.IMAGE, PORT_TYPES.IMAGE],
+    outputs: [],
+    component: DiffNode,
+    config: {
+      category: 'Processing',
+      color: '#FF9800'
+    }
+  })
+
   console.log('[NodeRegistry] All nodes registered successfully')
 }
 
@@ -81,7 +96,8 @@ function getNodeIcon(type) {
   const icons = {
     [NODE_TYPES.IMAGE]: '📷',
     [NODE_TYPES.IMAGE_GENERATOR]: '✨',
-    [NODE_TYPES.PROMPT]: '📝'
+    [NODE_TYPES.PROMPT]: '📝',
+    [NODE_TYPES.DIFF]: '🔍'
   }
   return icons[type] || '⚙️'
 }

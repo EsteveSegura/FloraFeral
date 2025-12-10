@@ -85,7 +85,8 @@ function getNodeIcon(type) {
   const icons = {
     [NODE_TYPES.IMAGE]: '📷',
     [NODE_TYPES.IMAGE_GENERATOR]: '✨',
-    [NODE_TYPES.PROMPT]: '📝'
+    [NODE_TYPES.PROMPT]: '📝',
+    [NODE_TYPES.DIFF]: '🔍'
   }
   return icons[type] || '⚙️'
 }
