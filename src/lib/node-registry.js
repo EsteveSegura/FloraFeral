@@ -88,37 +88,11 @@ class NodeRegistry {
   }
 
   /**
-   * List all registered node types
-   * @returns {Array<string>} Array of node type identifiers
-   */
-  listNodeTypes() {
-    return Array.from(this.nodes.keys())
-  }
-
-  /**
    * List all registered nodes with their definitions
    * @returns {Array<NodeDefinition>} Array of node definitions
    */
   listNodes() {
     return Array.from(this.nodes.values())
-  }
-
-  /**
-   * Get all nodes grouped by category (if defined in config)
-   * @returns {Object} Object with categories as keys and arrays of nodes as values
-   */
-  getNodesByCategory() {
-    const categories = {}
-
-    for (const node of this.nodes.values()) {
-      const category = node.config.category || 'Other'
-      if (!categories[category]) {
-        categories[category] = []
-      }
-      categories[category].push(node)
-    }
-
-    return categories
   }
 
   /**

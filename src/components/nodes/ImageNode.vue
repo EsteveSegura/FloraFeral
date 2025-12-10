@@ -108,8 +108,7 @@ function processFile(file) {
   reader.onload = (event) => {
     flowStore.updateNodeData(props.id, {
       src: event.target.result,
-      name: file.name,
-      mime: file.type
+      name: file.name
     })
   }
   reader.readAsDataURL(file)

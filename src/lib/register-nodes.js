@@ -73,33 +73,4 @@ export function registerAllNodes() {
   console.log('[NodeRegistry] All nodes registered successfully')
 }
 
-/**
- * Get registered node types for UI display
- * @returns {Array} Array of node types with their metadata
- */
-export function getAvailableNodeTypes() {
-  return nodeRegistry.listNodes().map(node => ({
-    type: node.type,
-    label: node.label,
-    description: node.description,
-    category: node.config.category,
-    icon: getNodeIcon(node.type)
-  }))
-}
-
-/**
- * Get icon for a node type
- * @param {string} type - Node type
- * @returns {string} Icon emoji
- */
-function getNodeIcon(type) {
-  const icons = {
-    [NODE_TYPES.IMAGE]: '📷',
-    [NODE_TYPES.IMAGE_GENERATOR]: '✨',
-    [NODE_TYPES.PROMPT]: '📝',
-    [NODE_TYPES.DIFF]: '🔍'
-  }
-  return icons[type] || '⚙️'
-}
-
 export default nodeRegistry

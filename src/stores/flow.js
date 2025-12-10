@@ -6,7 +6,6 @@ export const useFlowStore = defineStore('flow', {
   state: () => ({
     nodes: [],
     edges: [],
-    selectedNodeId: null,
     isLoading: false,
     error: null
   }),
@@ -14,11 +13,6 @@ export const useFlowStore = defineStore('flow', {
   getters: {
     getNodeById: (state) => (nodeId) => {
       return state.nodes.find(node => node.id === nodeId)
-    },
-
-    getNodeData: (state) => (nodeId) => {
-      const node = state.nodes.find(node => node.id === nodeId)
-      return node ? node.data : null
     },
 
     getNodeConnections: (state) => (nodeId) => {
@@ -50,9 +44,6 @@ export const useFlowStore = defineStore('flow', {
       this.edges = this.edges.filter(
         edge => edge.source !== nodeId && edge.target !== nodeId
       )
-      if (this.selectedNodeId === nodeId) {
-        this.selectedNodeId = null
-      }
     },
 
     addEdge(edge) {
@@ -71,10 +62,6 @@ export const useFlowStore = defineStore('flow', {
       this.error = error
     },
 
-    setSelectedNode(nodeId) {
-      this.selectedNodeId = nodeId
-    },
-
     clearError() {
       this.error = null
     },
@@ -88,48 +75,6 @@ export const useFlowStore = defineStore('flow', {
           position
         }
       }
-    },
-
-    initMockNodes() {
-      // Mock nodes for testing
-      this.nodes = [
-        createNode(
-          'node-1',
-          NODE_TYPES.IMAGE,
-          { x: 100, y: 100 },
-          { label: 'Image 1' },
-          getNodeIOConfig(NODE_TYPES.IMAGE)
-        ),
-        createNode(
-          'node-2',
-          NODE_TYPES.IMAGE_GENERATOR,
-          { x: 400, y: 100 },
-          {
-            label: 'Generator 1',
-            prompt: '',
-            model: 'nano-banana-pro',
-            params: replicateService.getModelDefaults('nano-banana-pro')
-          },
-          getNodeIOConfig(NODE_TYPES.IMAGE_GENERATOR)
-        ),
-        createNode(
-          'node-3',
-          NODE_TYPES.IMAGE_GENERATOR,
-          { x: 250, y: 300 },
-          {
-            label: 'Generator 2',
-            prompt: '',
-            model: 'nano-banana-pro',
-            params: replicateService.getModelDefaults('nano-banana-pro')
-          },
-          getNodeIOConfig(NODE_TYPES.IMAGE_GENERATOR)
-        )
-      ]
-
-      // Mock edge
-      this.edges = [
-        createEdge('edge-1', 'node-1', 'node-2')
-      ]
     }
   }
 })

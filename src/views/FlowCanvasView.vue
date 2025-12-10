@@ -47,7 +47,6 @@
         :delete-key-code="['Delete', 'Backspace']"
         :multi-selection-key-code="['Meta', 'Control']"
         @connect="onConnect"
-        @node-click="onNodeClick"
         @node-drag-stop="onNodeDragStop"
       >
         <Background pattern-color="#aaa" :gap="16" />
@@ -95,13 +94,6 @@ function getNodeIcon(type) {
   }
   return icons[type] || '⚙️'
 }
-
-// Inicializar nodos mock al montar
-onMounted(() => {
-  if (flowStore.nodes.length === 0) {
-    flowStore.initMockNodes()
-  }
-})
 
 // Guardar posición cuando se termina de arrastrar un nodo
 function onNodeDragStop(event) {
@@ -242,10 +234,5 @@ async function onFileSelected(event) {
     flowStore.setError('Failed to import flow')
     setTimeout(() => flowStore.clearError(), 5000)
   }
-}
-
-// Seleccionar nodo
-function onNodeClick(event) {
-  flowStore.setSelectedNode(event.node.id)
 }
 </script>
