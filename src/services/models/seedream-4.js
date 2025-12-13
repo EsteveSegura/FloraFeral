@@ -8,6 +8,7 @@ export const SEEDREAM_4 = {
   name: 'SeeDream-4',
   owner: 'bytedance',
   version: 'latest',
+  category: 'image', // Model category: image generation
   endpoint: 'http://localhost:1111/v1/models/bytedance/seedream-4/predictions',
 
   /**

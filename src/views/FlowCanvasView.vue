@@ -98,7 +98,9 @@ function getNodeIcon(type) {
     [NODE_TYPES.IMAGE]: '📷',
     [NODE_TYPES.IMAGE_GENERATOR]: '✨',
     [NODE_TYPES.PROMPT]: '📝',
-    [NODE_TYPES.DIFF]: '🔍'
+    [NODE_TYPES.DIFF]: '🔍',
+    [NODE_TYPES.COMPARE]: '⚖️',
+    [NODE_TYPES.TEXT_GENERATOR]: '💬'
   }
   return icons[type] || '⚙️'
 }
@@ -144,6 +146,13 @@ function onDrop(event) {
     data.prompt = ''
     data.model = 'nano-banana-pro'
     data.params = replicateService.getModelDefaults('nano-banana-pro')
+  }
+
+  // Add prompt field and model params for text generator nodes
+  if (draggedNodeType === NODE_TYPES.TEXT_GENERATOR) {
+    data.prompt = ''
+    data.model = 'gpt-5'
+    data.params = replicateService.getModelDefaults('gpt-5')
   }
 
   // Add prompt field for prompt nodes

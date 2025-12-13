@@ -8,6 +8,7 @@ export const GPT_IMAGE_1 = {
   name: 'GPT Image 1',
   owner: 'openai',
   version: 'latest',
+  category: 'image', // Model category: image generation
   endpoint: 'http://localhost:1111//v1/models/openai/gpt-image-1/predictions',
 
   /**

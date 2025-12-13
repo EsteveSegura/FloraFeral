@@ -7,6 +7,7 @@ import NANO_BANANA_PRO from './models/nano-banana-pro'
 import SEEDREAM_4 from './models/seedream-4'
 import LANG_SEGMENT_ANYTHING from './models/lang-segment-anything'
 import GPT_IMAGE_1 from './models/gpt-image-1'
+import GPT_5 from './models/gpt-5'
 
 /**
  * Registry of available models
@@ -16,6 +17,7 @@ const MODELS = {
   'seedream-4': SEEDREAM_4,
   'lang-segment-anything': LANG_SEGMENT_ANYTHING,
   'gpt-image-1': GPT_IMAGE_1,
+  'gpt-5': GPT_5,
   'default': NANO_BANANA_PRO
 }
 
@@ -81,10 +83,21 @@ class ReplicateService {
 
   /**
    * List available models
+   * @param {string} [category] - Optional category filter ('image', 'text')
    * @returns {Array<string>} Array of model IDs
    */
-  listModels() {
-    return Object.keys(MODELS).filter(id => id !== 'default')
+  listModels(category = null) {
+    const modelIds = Object.keys(MODELS).filter(id => id !== 'default')
+
+    if (!category) {
+      return modelIds
+    }
+
+    // Filter by category
+    return modelIds.filter(id => {
+      const model = MODELS[id]
+      return model.category === category
+    })
   }
 
   /**
@@ -105,6 +118,71 @@ class ReplicateService {
   getModelDefaults(modelId) {
     const model = this.getModel(modelId)
     return { ...model.defaults }
+  }
+
+  /**
+   * Generate text using Replicate API
+   * @param {Object} options
+   * @param {string} options.prompt - Text prompt
+   * @param {string|Array<string>} [options.imageSrc] - Input image(s)
+   * @param {string} [options.model] - Model ID to use (default: gpt-5)
+   * @param {Object} [options.params] - Additional parameters
+   * @returns {Promise<Object>} Generated text result
+   */
+  async generateText(options) {
+    const {
+      prompt,
+      imageSrc = null,
+      model: modelId = 'gpt-5',
+      params = {}
+    } = options
+
+    // Validate inputs
+    if (!prompt) {
+      throw new Error('Prompt is required')
+    }
+
+    // Get model configuration
+    const model = this.getModel(modelId)
+
+    // Prepare image input
+    let imageInput = []
+    if (imageSrc) {
+      imageInput = Array.isArray(imageSrc) ? imageSrc : [imageSrc]
+    }
+
+    console.log('Replicate service - preparing text generation:')
+    console.log('  Prompt:', prompt.substring(0, 50) + '...')
+    console.log('  Image inputs:', imageInput.length, 'images')
+
+    // Validate and build input
+    const validatedParams = model.validateParams(params)
+    const input = model.buildInput({
+      prompt,
+      imageInput,
+      params: validatedParams
+    })
+
+    console.log('  API input payload:', {
+      prompt: input.prompt?.substring(0, 50) + '...',
+      image_input_count: input.image_input?.length || 0,
+      reasoning_effort: input.reasoning_effort,
+      verbosity: input.verbosity
+    })
+
+    // Check for API token
+    const token = this.getApiToken()
+    if (!token) {
+      throw new Error('No Replicate API token found. Please set VITE_REPLICATE_API_TOKEN in your .env file')
+    }
+
+    // Make API call
+    try {
+      const response = await this._callApi(model.endpoint, input, token, model)
+      return model.parseResponse(response)
+    } catch (error) {
+      throw this._handleError(error)
+    }
   }
 
   /**

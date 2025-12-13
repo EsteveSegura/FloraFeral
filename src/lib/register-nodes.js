@@ -10,6 +10,7 @@ import ImageGeneratorNode from '@/components/nodes/ImageGeneratorNode.vue'
 import PromptNode from '@/components/nodes/PromptNode.vue'
 import DiffNode from '@/components/nodes/DiffNode.vue'
 import ImageCompareNode from '@/components/nodes/ImageCompareNode.vue'
+import TextGeneratorNode from '@/components/nodes/TextGeneratorNode.vue'
 
 /**
  * Register all available node types
@@ -82,6 +83,20 @@ export function registerAllNodes() {
     config: {
       category: 'Processing',
       color: '#00BCD4'
+    }
+  })
+
+  // Register Text Generator Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.TEXT_GENERATOR,
+    label: 'Text Generator',
+    description: 'Generate text using GPT-5 with optional image and prompt inputs',
+    inputs: [PORT_TYPES.IMAGE, PORT_TYPES.PROMPT],
+    outputs: [PORT_TYPES.PROMPT],
+    component: TextGeneratorNode,
+    config: {
+      category: 'Generator',
+      color: '#E91E63'
     }
   })
 

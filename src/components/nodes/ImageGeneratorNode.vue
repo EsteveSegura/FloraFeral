@@ -209,13 +209,14 @@ const connectedImages = computed(() => {
     .filter(img => img !== null)
 })
 
-// Get connected prompt from upstream prompt node
+// Get connected prompt from upstream prompt node or text generator node
 const connectedPrompt = computed(() => {
   const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
 
   for (const edge of incomingEdges) {
     const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
-    if (sourceNode && sourceNode.type === 'prompt' && sourceNode.data?.prompt) {
+    // Accept prompts from 'prompt' nodes or 'text-generator' nodes
+    if (sourceNode && (sourceNode.type === 'prompt' || sourceNode.type === 'text-generator') && sourceNode.data?.prompt) {
       return sourceNode.data.prompt
     }
   }
@@ -223,8 +224,8 @@ const connectedPrompt = computed(() => {
   return null
 })
 
-// Toolbar controls - Available models
-const availableModels = computed(() => replicateService.listModels())
+// Toolbar controls - Available models (only image generation models)
+const availableModels = computed(() => replicateService.listModels('image'))
 
 // Current model from node data
 const currentModel = computed(() => nodeData.value.model || 'nano-banana-pro')

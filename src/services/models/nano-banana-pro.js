@@ -8,6 +8,7 @@ export const NANO_BANANA_PRO = {
   name: 'Nano Banana Pro',
   owner: 'google',
   version: 'latest',
+  category: 'image', // Model category: image generation
   endpoint: 'http://localhost:1111/v1/models/google/nano-banana-pro/predictions',
 
   /**

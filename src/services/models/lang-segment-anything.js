@@ -9,6 +9,7 @@ export const LANG_SEGMENT_ANYTHING = {
   name: 'Lang Segment Anything',
   owner: 'tmappdev',
   version: '891411c38a6ed2d44c004b7b9e44217df7a5b07848f29ddefd2e28bc7cbf93bc',
+  category: 'image', // Model category: image processing/generation
   endpoint: 'http://localhost:1111/v1/predictions',
   useVersionInBody: true,  // Uses version in request body instead of path
 
