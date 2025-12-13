@@ -22,12 +22,12 @@
       </aside>
       <!-- Toolbar -->
       <div class="toolbar">
-        <button class="toolbar-button" @click="handleExport" title="Export flow to JSON">
+        <BaseButton variant="primary" size="sm" @click="handleExport" title="Export flow to JSON">
           💾 Export
-        </button>
-        <button class="toolbar-button" @click="handleImport" title="Import flow from JSON">
+        </BaseButton>
+        <BaseButton variant="primary" size="sm" @click="handleImport" title="Import flow from JSON">
           📂 Import
-        </button>
+        </BaseButton>
         <input
           ref="fileInput"
           type="file"
@@ -48,7 +48,7 @@
         :delete-key-code="['Delete', 'Backspace']"
         :multi-selection-key-code="['Meta', 'Control']"
       >
-        <Background pattern-color="#aaa" :gap="16" />
+        <Background pattern-color="#242424" :gap="24" variant="dots" size="2" />
         <Controls />
       </VueFlow>
     </div>
@@ -66,6 +66,7 @@ import { createEdge, createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-
 import nodeRegistry from '@/lib/node-registry'
 import { downloadFlow, loadFlowFromFile } from '@/lib/flow-io'
 import replicateService from '@/services/replicate'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import '@/styles/FlowCanvasView.css'
 
 const flowStore = useFlowStore()

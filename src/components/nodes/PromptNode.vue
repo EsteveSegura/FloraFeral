@@ -10,13 +10,12 @@
     :selected="selected"
   >
     <div class="prompt-node-content">
-      <textarea
+      <BaseTextarea
         v-model="localPrompt"
-        class="prompt-textarea"
         placeholder="Enter your prompt here..."
-        rows="5"
+        :rows="5"
         @blur="updatePrompt"
-      ></textarea>
+      />
 
       <div v-if="nodeData.prompt" class="character-count">
         {{ nodeData.prompt.length }} characters
@@ -29,6 +28,7 @@
 import { ref, computed, watch } from 'vue'
 import { useNode, useVueFlow } from '@vue-flow/core'
 import BaseNode from '@/components/base/BaseNode.vue'
+import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 
 const props = defineProps({
   id: {
@@ -78,34 +78,14 @@ function updatePrompt() {
 .prompt-node-content {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
-}
-
-.prompt-textarea {
-  width: 100%;
+  gap: var(--flora-space-2);
+  padding: var(--flora-space-3);
   min-width: 250px;
-  padding: 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  resize: vertical;
-  transition: border-color 0.2s;
-}
-
-.prompt-textarea:focus {
-  outline: none;
-  border-color: #4CAF50;
-}
-
-.prompt-textarea::placeholder {
-  color: #999;
 }
 
 .character-count {
-  font-size: 0.75rem;
-  color: #666;
+  font-size: var(--flora-font-size-xs);
+  color: var(--flora-color-text-tertiary);
   text-align: right;
 }
 </style>

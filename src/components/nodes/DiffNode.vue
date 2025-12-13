@@ -197,7 +197,7 @@ onMounted(async () => {
 
 <style scoped>
 .diff-node-content {
-  padding: 0.75rem;
+  padding: var(--flora-space-3);
   min-width: 280px;
 }
 
@@ -205,63 +205,63 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 2px dashed #ddd;
+  gap: var(--flora-space-3);
+  padding: var(--flora-space-6);
+  background: var(--flora-color-bg-tertiary);
+  border-radius: var(--flora-radius-md);
+  border: var(--flora-border-width-medium) dashed var(--flora-color-border-default);
 }
 
 .status-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.25rem;
+  font-size: var(--flora-font-size-3xl);
+  margin-bottom: var(--flora-space-1);
 }
 
 .status-info p {
   margin: 0;
-  color: #666;
-  font-size: 0.9rem;
+  color: var(--flora-color-text-tertiary);
+  font-size: var(--flora-font-size-sm);
   text-align: center;
 }
 
 .connection-status {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: #666;
+  gap: var(--flora-space-2);
+  font-size: var(--flora-font-size-sm);
+  color: var(--flora-color-text-tertiary);
   width: 100%;
-  padding: 0.25rem 0.5rem;
-  background: white;
-  border-radius: 4px;
+  padding: var(--flora-space-1) var(--flora-space-2);
+  background: var(--flora-color-surface);
+  border-radius: var(--flora-radius-md);
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: #ddd;
-  transition: background 0.3s;
+  border-radius: var(--flora-radius-full);
+  background: var(--flora-color-border-default);
+  transition: all var(--flora-transition-base);
 }
 
 .status-dot.active {
-  background: #4CAF50;
-  box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+  background: var(--flora-color-accent);
+  box-shadow: 0 0 8px rgba(22, 163, 74, 0.5);
 }
 
 .diff-result {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--flora-space-2);
 }
 
 .diff-preview {
   width: 100%;
   max-height: 300px;
-  border-radius: 4px;
+  border-radius: var(--flora-radius-md);
   overflow: hidden;
-  border: 1px solid #eee;
-  background: #fafafa;
+  border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
+  background: var(--flora-color-bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -278,19 +278,19 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem;
-  background: #f0f0f0;
-  border-radius: 4px;
-  font-size: 0.85rem;
+  padding: var(--flora-space-2);
+  background: var(--flora-color-bg-tertiary);
+  border-radius: var(--flora-radius-md);
+  font-size: var(--flora-font-size-sm);
 }
 
 .info-label {
-  font-weight: 500;
-  color: #666;
+  font-weight: var(--flora-font-weight-medium);
+  color: var(--flora-color-text-tertiary);
 }
 
 .info-detail {
-  color: #333;
+  color: var(--flora-color-text-primary);
   font-family: monospace;
 }
 </style>

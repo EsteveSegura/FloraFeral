@@ -5,14 +5,15 @@
       <div class="node-toolbar-content">
         <!-- Model Selector -->
         <div class="toolbar-control">
-          <label for="model-select">Model:</label>
-          <select
+          <BaseLabel variant="toolbar" for="model-select">Model:</BaseLabel>
+          <BaseSelect
             id="model-select"
-            :value="currentModel"
+            size="sm"
+            :model-value="currentModel"
             @change="onModelChange"
           >
             <option value="gpt-5">GPT-5</option>
-          </select>
+          </BaseSelect>
         </div>
 
         <!-- Dynamic Controls from uiSchema -->
@@ -21,13 +22,14 @@
           :key="control.key"
           class="toolbar-control"
         >
-          <label :for="`control-${control.key}`">{{ control.label }}:</label>
+          <BaseLabel variant="toolbar" :for="`control-${control.key}`">{{ control.label }}:</BaseLabel>
 
           <!-- Select Control -->
-          <select
+          <BaseSelect
             v-if="control.type === 'select'"
             :id="`control-${control.key}`"
-            :value="getParamValue(control.key, control.default)"
+            size="sm"
+            :model-value="getParamValue(control.key, control.default)"
             @change="onParamChange(control.key, $event.target.value)"
           >
             <option
@@ -37,14 +39,15 @@
             >
               {{ option }}
             </option>
-          </select>
+          </BaseSelect>
 
           <!-- Number Input -->
-          <input
+          <BaseInput
             v-else-if="control.type === 'number'"
             :id="`control-${control.key}`"
             type="number"
-            :value="getParamValue(control.key, control.default)"
+            size="sm"
+            :model-value="getParamValue(control.key, control.default)"
             :min="control.min"
             :max="control.max"
             @input="onParamChange(control.key, $event.target.value ? parseInt($event.target.value) : null)"
@@ -89,24 +92,25 @@
 
         <!-- Prompt input -->
         <div class="prompt-section">
-          <label for="prompt-input">Prompt:</label>
-          <textarea
+          <BaseLabel for="prompt-input">Prompt:</BaseLabel>
+          <BaseTextarea
             id="prompt-input"
             v-model="localPrompt"
             placeholder="Enter your prompt here..."
-            rows="4"
-          ></textarea>
+            :rows="4"
+          />
         </div>
 
         <!-- Generate button -->
         <div class="generate-section">
-          <button
-            class="generate-button"
+          <BaseButton
+            variant="primary"
+            size="md"
             :disabled="isGenerating || !localPrompt.trim()"
             @click="handleGenerate"
           >
             {{ isGenerating ? 'Generating...' : 'Generate Text' }}
-          </button>
+          </BaseButton>
           <div v-if="connectedImages.length > 0" class="input-info">
             Using {{ connectedImages.length }} input {{ connectedImages.length === 1 ? 'image' : 'images' }}
           </div>
@@ -134,6 +138,11 @@ import { useNode, useVueFlow, Position } from '@vue-flow/core'
 import { NodeToolbar } from '@vue-flow/node-toolbar'
 import { useFlowStore } from '@/stores/flow'
 import BaseNode from '@/components/base/BaseNode.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseLabel from '@/components/ui/BaseLabel.vue'
 import replicateService from '@/services/replicate'
 import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
@@ -298,12 +307,12 @@ async function handleGenerate() {
 <style scoped>
 .node-toolbar-content {
   display: flex;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  gap: var(--flora-space-4);
+  padding: var(--flora-space-3);
+  background: var(--flora-color-surface);
+  border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
+  border-radius: var(--flora-radius-md);
+  box-shadow: var(--flora-shadow-lg);
   max-width: 800px;
   flex-wrap: wrap;
 }
@@ -311,65 +320,46 @@ async function handleGenerate() {
 .toolbar-control {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--flora-space-1);
   min-width: 120px;
-}
-
-.toolbar-control label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #666;
-}
-
-.toolbar-control select,
-.toolbar-control input {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  background: white;
-}
-
-.toolbar-control select:focus,
-.toolbar-control input:focus {
-  outline: none;
-  border-color: #4CAF50;
 }
 
 .text-generator-node-content {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: var(--flora-space-3);
+  padding: var(--flora-space-3);
   min-width: 320px;
   max-width: 500px;
 }
 
 .section-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #666;
-  margin-bottom: 0.25rem;
+  font-size: var(--flora-font-size-xs);
+  font-weight: var(--flora-font-weight-semibold);
+  color: var(--flora-color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--flora-space-1);
 }
 
 .connected-images {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--flora-space-2);
 }
 
 .thumbnails-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-  gap: 0.5rem;
+  gap: var(--flora-space-2);
 }
 
 .thumbnail {
   width: 60px;
   height: 60px;
-  border-radius: 4px;
+  border-radius: var(--flora-radius-md);
   overflow: hidden;
-  border: 2px solid #eee;
+  border: var(--flora-border-width-medium) solid var(--flora-color-border-default);
 }
 
 .thumbnail img {
@@ -381,16 +371,16 @@ async function handleGenerate() {
 .connected-prompt {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--flora-space-2);
 }
 
 .prompt-preview {
-  padding: 0.5rem;
-  background: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  color: #333;
+  padding: var(--flora-space-2);
+  background: var(--flora-color-bg-tertiary);
+  border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
+  border-radius: var(--flora-radius-md);
+  font-size: var(--flora-font-size-sm);
+  color: var(--flora-color-text-secondary);
   max-height: 60px;
   overflow-y: auto;
 }
@@ -398,44 +388,23 @@ async function handleGenerate() {
 .prompt-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.prompt-section label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #333;
-}
-
-.prompt-section textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-family: inherit;
-  resize: vertical;
-}
-
-.prompt-section textarea:focus {
-  outline: none;
-  border-color: #4CAF50;
+  gap: var(--flora-space-2);
 }
 
 .output-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: #f0f8f0;
-  border: 1px solid #c8e6c9;
-  border-radius: 4px;
+  gap: var(--flora-space-2);
+  padding: var(--flora-space-3);
+  background: var(--flora-color-success-bg);
+  border: var(--flora-border-width-thin) solid var(--flora-color-success-border);
+  border-radius: var(--flora-radius-md);
 }
 
 .text-output {
-  font-size: 0.85rem;
-  color: #333;
-  line-height: 1.5;
+  font-size: var(--flora-font-size-sm);
+  color: var(--flora-color-text-primary);
+  line-height: var(--flora-line-height-normal);
   white-space: pre-wrap;
   max-height: 200px;
   overflow-y: auto;
@@ -445,59 +414,33 @@ async function handleGenerate() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 2px dashed #ddd;
+  gap: var(--flora-space-2);
+  padding: var(--flora-space-6);
+  background: var(--flora-color-bg-tertiary);
+  border-radius: var(--flora-radius-md);
+  border: var(--flora-border-width-medium) dashed var(--flora-color-border-default);
 }
 
 .status-icon {
-  font-size: 2rem;
+  font-size: var(--flora-font-size-3xl);
 }
 
 .status-info p {
   margin: 0;
-  color: #666;
-  font-size: 0.9rem;
+  color: var(--flora-color-text-tertiary);
+  font-size: var(--flora-font-size-sm);
   text-align: center;
 }
 
 .generate-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.generate-button {
-  width: 100%;
-  padding: 0.75rem;
-  background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(233, 30, 99, 0.2);
-}
-
-.generate-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #C2185B 0%, #AD1457 100%);
-  box-shadow: 0 4px 8px rgba(233, 30, 99, 0.3);
-  transform: translateY(-1px);
-}
-
-.generate-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  box-shadow: none;
+  gap: var(--flora-space-2);
 }
 
 .input-info {
-  font-size: 0.8rem;
-  color: #666;
+  font-size: var(--flora-font-size-xs);
+  color: var(--flora-color-text-tertiary);
   text-align: center;
   font-style: italic;
 }

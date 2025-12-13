@@ -5,10 +5,11 @@
     <div class="node-toolbar-content">
       <!-- Model Selector -->
       <div class="toolbar-control">
-        <label for="model-select">Model:</label>
-        <select
+        <BaseLabel variant="toolbar" for="model-select">Model:</BaseLabel>
+        <BaseSelect
           id="model-select"
-          :value="currentModel"
+          size="sm"
+          :model-value="currentModel"
           :disabled="availableModels.length <= 1"
           @change="onModelChange"
         >
@@ -19,7 +20,7 @@
           >
             {{ getModelLabel(modelId) }}
           </option>
-        </select>
+        </BaseSelect>
       </div>
 
       <!-- Dynamic Controls from uiSchema -->
@@ -28,13 +29,14 @@
         :key="control.key"
         class="toolbar-control"
       >
-        <label :for="`control-${control.key}`">{{ control.label }}:</label>
+        <BaseLabel variant="toolbar" :for="`control-${control.key}`">{{ control.label }}:</BaseLabel>
 
         <!-- Select Control -->
-        <select
+        <BaseSelect
           v-if="control.type === 'select'"
           :id="`control-${control.key}`"
-          :value="getParamValue(control.key, control.default)"
+          size="sm"
+          :model-value="getParamValue(control.key, control.default)"
           @change="onParamChange(control.key, $event.target.value)"
         >
           <option
@@ -44,31 +46,32 @@
           >
             {{ option }}
           </option>
-        </select>
+        </BaseSelect>
 
         <!-- Text Input -->
-        <input
+        <BaseInput
           v-else-if="control.type === 'text'"
           :id="`control-${control.key}`"
           type="text"
-          :value="getParamValue(control.key, control.default)"
+          size="sm"
+          :model-value="getParamValue(control.key, control.default)"
           @input="onParamChange(control.key, $event.target.value)"
         />
 
         <!-- Number Input -->
-        <input
+        <BaseInput
           v-else-if="control.type === 'number'"
           :id="`control-${control.key}`"
           type="number"
-          :value="getParamValue(control.key, control.default)"
+          size="sm"
+          :model-value="getParamValue(control.key, control.default)"
           @input="onParamChange(control.key, parseFloat($event.target.value))"
         />
 
         <!-- Checkbox -->
-        <input
+        <BaseCheckbox
           v-else-if="control.type === 'checkbox'"
           :id="`control-${control.key}`"
-          type="checkbox"
           :checked="getParamValue(control.key, control.default)"
           @change="onParamChange(control.key, $event.target.checked)"
         />
@@ -115,14 +118,14 @@
 
       <!-- Prompt input (hidden if there's a connected prompt) -->
       <div v-if="!connectedPrompt" class="prompt-section">
-        <label for="prompt">Prompt:</label>
-        <textarea
+        <BaseLabel for="prompt">Prompt:</BaseLabel>
+        <BaseTextarea
           id="prompt"
           v-model="localPrompt"
           placeholder="Describe the image you want to generate..."
-          rows="3"
+          :rows="3"
           @blur="updatePrompt"
-        ></textarea>
+        />
       </div>
 
       <!-- Show connected prompt info -->
@@ -133,13 +136,14 @@
 
       <!-- Generate button -->
       <div class="generate-section">
-        <button
-          class="generate-button"
+        <BaseButton
+          variant="primary"
+          size="md"
           :disabled="isGenerating || (!connectedPrompt && !localPrompt.trim())"
           @click="handleGenerate"
         >
           {{ isGenerating ? 'Generating...' : 'Generate Image' }}
-        </button>
+        </BaseButton>
         <div v-if="connectedImages.length > 0" class="input-info">
           Using {{ connectedImages.length }} input {{ connectedImages.length === 1 ? 'image' : 'images' }}
         </div>
@@ -156,6 +160,12 @@ import { useFlowStore } from '@/stores/flow'
 import { NodeToolbar } from '@vue-flow/node-toolbar'
 import { Position } from '@vue-flow/core'
 import BaseNode from '@/components/base/BaseNode.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseLabel from '@/components/ui/BaseLabel.vue'
+import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import replicateService from '@/services/replicate'
 import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
@@ -375,36 +385,36 @@ async function handleGenerate() {
 .generator-node-content {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--flora-space-3);
   min-width: 280px;
 }
 
 .connected-images {
-  padding: 0.5rem;
-  background: #f9f9f9;
-  border-radius: 4px;
-  border: 1px solid #eee;
+  padding: var(--flora-space-2);
+  background: var(--flora-color-bg-tertiary);
+  border-radius: var(--flora-radius-md);
+  border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
 }
 
 .section-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #666;
-  margin-bottom: 0.5rem;
+  font-size: var(--flora-font-size-xs);
+  font-weight: var(--flora-font-weight-semibold);
+  color: var(--flora-color-text-tertiary);
+  margin-bottom: var(--flora-space-2);
 }
 
 .thumbnails-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-  gap: 0.5rem;
+  gap: var(--flora-space-2);
 }
 
 .thumbnail {
   width: 100%;
   height: 60px;
-  border-radius: 4px;
+  border-radius: var(--flora-radius-md);
   overflow: hidden;
-  border: 1px solid #ddd;
+  border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
 }
 
 .thumbnail img {
@@ -416,10 +426,10 @@ async function handleGenerate() {
 .image-preview {
   width: 100%;
   height: 180px;
-  border-radius: 4px;
+  border-radius: var(--flora-radius-md);
   overflow: hidden;
-  border: 1px solid #eee;
-  background: #fafafa;
+  border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
+  background: var(--flora-color-bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -438,64 +448,42 @@ async function handleGenerate() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
-  border: 2px dashed #ddd;
-  border-radius: 4px;
-  color: #999;
+  background: var(--flora-color-bg-tertiary);
+  border: var(--flora-border-width-medium) dashed var(--flora-color-border-default);
+  border-radius: var(--flora-radius-md);
+  color: var(--flora-color-text-tertiary);
 }
 
 .placeholder-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  font-size: var(--flora-font-size-3xl);
+  margin-bottom: var(--flora-space-2);
 }
 
 .image-placeholder p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--flora-font-size-sm);
 }
 
 .prompt-section {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-}
-
-.prompt-section label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #555;
-}
-
-.prompt-section textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 0.85rem;
-  resize: vertical;
-  transition: border-color 0.2s;
-}
-
-.prompt-section textarea:focus {
-  outline: none;
-  border-color: #4CAF50;
+  gap: var(--flora-space-2);
 }
 
 .connected-prompt-info {
-  padding: 0.5rem;
-  background: #f0f7ff;
-  border-radius: 4px;
-  border: 1px solid #d0e5ff;
+  padding: var(--flora-space-2);
+  background: var(--flora-color-info-bg);
+  border-radius: var(--flora-radius-md);
+  border: var(--flora-border-width-thin) solid var(--flora-color-info-border);
 }
 
 .prompt-preview {
-  font-size: 0.85rem;
-  color: #333;
-  margin-top: 0.25rem;
-  padding: 0.25rem;
-  background: white;
-  border-radius: 3px;
+  font-size: var(--flora-font-size-sm);
+  color: var(--flora-color-text-primary);
+  margin-top: var(--flora-space-1);
+  padding: var(--flora-space-2);
+  background: var(--flora-color-surface);
+  border-radius: var(--flora-radius-sm);
   max-width: 280px;
   white-space: nowrap;
   overflow: hidden;
@@ -505,96 +493,36 @@ async function handleGenerate() {
 .generate-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.generate-button {
-  width: 100%;
-  padding: 0.6rem;
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-
-.generate-button:hover:not(:disabled) {
-  background: #1976D2;
-}
-
-.generate-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
+  gap: var(--flora-space-2);
 }
 
 .input-info {
-  font-size: 0.75rem;
-  color: #666;
+  font-size: var(--flora-font-size-xs);
+  color: var(--flora-color-text-tertiary);
   text-align: center;
-  padding: 0.25rem;
-  background: #e3f2fd;
-  border-radius: 4px;
-  font-weight: 500;
+  padding: var(--flora-space-2);
+  background: var(--flora-color-info-bg);
+  border-radius: var(--flora-radius-md);
+  font-weight: var(--flora-font-weight-medium);
 }
 
 /* Node Toolbar Styles */
 .node-toolbar-content {
   display: flex;
+  gap: var(--flora-space-4);
+  padding: var(--flora-space-3);
+  background: var(--flora-color-surface);
+  border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
+  border-radius: var(--flora-radius-md);
+  box-shadow: var(--flora-shadow-lg);
+  max-width: 800px;
   flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(10px);
-  border: 2px solid #4CAF50;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .toolbar-control {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.toolbar-control label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #555;
-  white-space: nowrap;
-}
-
-.toolbar-control select,
-.toolbar-control input[type="text"],
-.toolbar-control input[type="number"] {
-  padding: 0.4rem 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  background: white;
+  flex-direction: column;
+  gap: var(--flora-space-1);
   min-width: 120px;
-  transition: border-color 0.2s;
-}
-
-.toolbar-control select:focus,
-.toolbar-control input[type="text"]:focus,
-.toolbar-control input[type="number"]:focus {
-  outline: none;
-  border-color: #4CAF50;
-}
-
-.toolbar-control select:disabled {
-  background: #f5f5f5;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.toolbar-control input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
 }
 </style>

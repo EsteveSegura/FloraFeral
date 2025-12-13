@@ -1,0 +1,196 @@
+/**
+ * OpenFloraFauna Design System
+ * Dark theme with natural green accent
+ *
+ * All variables are prefixed with --flora- to avoid collisions
+ */
+
+:root {
+  /* ========================================
+     COLOR PALETTE - Dark Theme
+     ======================================== */
+
+  /* Background Colors */
+  --flora-color-bg-primary: #131313;
+  --flora-color-bg-secondary: #1a1a1a;
+  --flora-color-bg-tertiary: #242424;
+  --flora-color-bg-elevated: #2a2a2a;
+  --flora-color-bg-overlay: rgba(0, 0, 0, 0.8);
+
+  /* Surface Colors (for cards, panels) */
+  --flora-color-surface: #1e1e1e;
+  --flora-color-surface-hover: #262626;
+  --flora-color-surface-active: #2d2d2d;
+
+  /* Border Colors */
+  --flora-color-border-subtle: #333333;
+  --flora-color-border-default: #404040;
+  --flora-color-border-strong: #525252;
+
+  /* Text Colors */
+  --flora-color-text-primary: #f5f5f5;
+  --flora-color-text-secondary: #a3a3a3;
+  --flora-color-text-tertiary: #737373;
+  --flora-color-text-disabled: #525252;
+  --flora-color-text-inverse: #0a0a0a;
+
+  /* Accent Colors - Flora Green */
+  --flora-color-accent-50: #f0fdf4;
+  --flora-color-accent-100: #dcfce7;
+  --flora-color-accent-200: #bbf7d0;
+  --flora-color-accent-300: #86efac;
+  --flora-color-accent-400: #4ade80;
+  --flora-color-accent-500: #22c55e;
+  --flora-color-accent-600: #16a34a;   /* Primary accent */
+  --flora-color-accent-700: #15803d;
+  --flora-color-accent-800: #166534;
+  --flora-color-accent-900: #14532d;
+
+  /* Semantic Aliases */
+  --flora-color-accent: var(--flora-color-accent-600);
+  --flora-color-accent-hover: var(--flora-color-accent-700);
+  --flora-color-accent-active: var(--flora-color-accent-800);
+  --flora-color-accent-subtle: var(--flora-color-accent-900);
+  --flora-color-accent-text: var(--flora-color-accent-400);
+
+  /* Semantic Colors */
+  --flora-color-success: #22c55e;
+  --flora-color-success-bg: #14532d;
+  --flora-color-success-border: #166534;
+
+  --flora-color-danger: #ef4444;
+  --flora-color-danger-bg: #450a0a;
+  --flora-color-danger-border: #7f1d1d;
+
+  --flora-color-warning: #f59e0b;
+  --flora-color-warning-bg: #451a03;
+  --flora-color-warning-border: #78350f;
+
+  --flora-color-info: #3b82f6;
+  --flora-color-info-bg: #172554;
+  --flora-color-info-border: #1e3a8a;
+
+  /* Port Type Colors (for node handles) */
+  --flora-color-port-image: #10b981;    /* emerald */
+  --flora-color-port-prompt: #3b82f6;   /* blue */
+  --flora-color-port-text: #8b5cf6;     /* purple */
+  --flora-color-port-number: #f59e0b;   /* amber */
+
+  /* ========================================
+     SPACING
+     ======================================== */
+
+  --flora-space-0: 0;
+  --flora-space-1: 0.25rem;   /* 4px */
+  --flora-space-2: 0.5rem;    /* 8px */
+  --flora-space-3: 0.75rem;   /* 12px */
+  --flora-space-4: 1rem;      /* 16px */
+  --flora-space-5: 1.25rem;   /* 20px */
+  --flora-space-6: 1.5rem;    /* 24px */
+  --flora-space-8: 2rem;      /* 32px */
+  --flora-space-10: 2.5rem;   /* 40px */
+  --flora-space-12: 3rem;     /* 48px */
+  --flora-space-16: 4rem;     /* 64px */
+
+  /* ========================================
+     TYPOGRAPHY
+     ======================================== */
+
+  --flora-font-family-base: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --flora-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+
+  /* Font Sizes */
+  --flora-font-size-xs: 0.75rem;      /* 12px */
+  --flora-font-size-sm: 0.875rem;     /* 14px */
+  --flora-font-size-base: 1rem;       /* 16px */
+  --flora-font-size-lg: 1.125rem;     /* 18px */
+  --flora-font-size-xl: 1.25rem;      /* 20px */
+  --flora-font-size-2xl: 1.5rem;      /* 24px */
+  --flora-font-size-3xl: 1.875rem;    /* 30px */
+
+  /* Font Weights */
+  --flora-font-weight-normal: 400;
+  --flora-font-weight-medium: 500;
+  --flora-font-weight-semibold: 600;
+  --flora-font-weight-bold: 700;
+
+  /* Line Heights */
+  --flora-line-height-tight: 1.25;
+  --flora-line-height-normal: 1.5;
+  --flora-line-height-relaxed: 1.75;
+
+  /* ========================================
+     BORDERS & RADIUS
+     ======================================== */
+
+  --flora-border-width-thin: 1px;
+  --flora-border-width-medium: 2px;
+  --flora-border-width-thick: 3px;
+
+  --flora-radius-sm: 4px;
+  --flora-radius-md: 6px;
+  --flora-radius-lg: 8px;
+  --flora-radius-xl: 12px;
+  --flora-radius-2xl: 16px;
+  --flora-radius-full: 9999px;
+
+  /* ========================================
+     SHADOWS
+     ======================================== */
+
+  --flora-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --flora-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --flora-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --flora-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+
+  /* Colored Shadows */
+  --flora-shadow-accent: 0 4px 12px rgba(22, 163, 74, 0.3);
+  --flora-shadow-accent-lg: 0 10px 20px rgba(22, 163, 74, 0.4);
+
+  /* ========================================
+     TRANSITIONS
+     ======================================== */
+
+  --flora-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --flora-transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --flora-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  --flora-transition-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ========================================
+     Z-INDEX
+     ======================================== */
+
+  --flora-z-dropdown: 1000;
+  --flora-z-sticky: 1100;
+  --flora-z-overlay: 1200;
+  --flora-z-modal: 1300;
+  --flora-z-popover: 1400;
+  --flora-z-tooltip: 1500;
+
+  /* ========================================
+     COMPONENT-SPECIFIC
+     ======================================== */
+
+  /* Buttons */
+  --flora-button-height-sm: 32px;
+  --flora-button-height-md: 40px;
+  --flora-button-height-lg: 48px;
+
+  /* Inputs */
+  --flora-input-height-sm: 32px;
+  --flora-input-height-md: 40px;
+  --flora-input-height-lg: 48px;
+
+  /* Focus Ring */
+  --flora-focus-ring-width: 2px;
+  --flora-focus-ring-offset: 2px;
+  --flora-focus-ring-color: var(--flora-color-accent);
+
+  /* Node Editor Specific */
+  --flora-node-bg: var(--flora-color-surface);
+  --flora-node-border: var(--flora-color-border-default);
+  --flora-node-shadow: var(--flora-shadow-md);
+  --flora-node-shadow-hover: var(--flora-shadow-lg);
+  --flora-node-shadow-selected: var(--flora-shadow-accent-lg);
+}

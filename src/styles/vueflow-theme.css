@@ -1,0 +1,70 @@
+/**
+ * VueFlow Dark Theme
+ * Maps OpenFloraFauna design tokens to VueFlow's official CSS variables
+ * Based on: https://vueflow.dev/guide/theming.html
+ */
+
+/* Background pattern (dots/grid) */
+.vue-flow__background {
+  background: var(--flora-color-bg-primary);
+}
+
+/* Edges - additional customization */
+.vue-flow__edge-path {
+  stroke: var(--flora-color-border-strong);
+  stroke-width: 3px;
+}
+
+.vue-flow__edge.selected .vue-flow__edge-path,
+.vue-flow__edge:focus .vue-flow__edge-path,
+.vue-flow__edge:focus-visible .vue-flow__edge-path {
+  stroke: var(--flora-color-accent);
+  stroke-width: 3px;
+}
+
+
+.vue-flow__handle-valid {
+  border-color: var(--flora-color-success);
+}
+
+.vue-flow__handle-invalid {
+  border-color: var(--flora-color-danger);
+}
+
+/* Selection box */
+.vue-flow__selection {
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid var(--flora-color-accent);
+}
+
+/* Controls (zoom buttons, etc.) */
+.vue-flow__controls {
+  background: var(--flora-color-surface);
+  border: 1px solid var(--flora-color-border-default);
+}
+
+.vue-flow__controls-button {
+  background: var(--flora-color-bg-secondary);
+  border: none;
+  border-bottom: 2px solid var(--flora-color-border-subtle);
+  color: var(--flora-color-text-secondary);
+  transition: all var(--flora-transition-fast);
+}
+
+/* Make items fill white */ 
+.vue-flow__controls-button svg {
+  fill: var(--flora-color-text-primary);
+}
+.vue-flow__controls-button:hover {
+  background: var(--flora-color-surface-hover);
+}
+
+.vue-flow__controls-button:disabled {
+  color: var(--flora-color-text-disabled);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.vue-flow__controls-button:last-child {
+  border-bottom: none;
+}
