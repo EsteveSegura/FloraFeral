@@ -48,6 +48,7 @@
         :delete-key-code="['Delete', 'Backspace']"
         :multi-selection-key-code="['Meta', 'Control']"
         elevate-edges-on-select
+        elevate-nodes-on-select
       >
         <Background pattern-color="#242424" :gap="24" variant="dots" size="2" />
         <Controls />
@@ -428,6 +429,15 @@ async function handleGroup() {
 
   if (selectedNodes.length < 2) {
     console.log('Need at least 2 nodes to create a group')
+    return
+  }
+
+  // Check if any selected node is already in a group (prevent nested groups)
+  const hasNodeInGroup = selectedNodes.some(node => node.parentNode)
+  if (hasNodeInGroup) {
+    console.log('Cannot create nested groups - one or more nodes are already in a group')
+    flowStore.setError('Cannot create nested groups')
+    setTimeout(() => flowStore.clearError(), 3000)
     return
   }
 
