@@ -1,48 +1,63 @@
 <template>
-  <BaseNode
-    :id="id"
-    :type="type"
-    :data="nodeData"
-    :label="nodeData.label"
-    :inputs="[]"
-    :outputs="['image']"
-    icon="📷"
-    :selected="selected"
-    @action:upload="handleUpload"
-  >
-    <div
-      class="image-node-content"
-      @drop="handleDrop"
-      @dragover.prevent
-      @dragenter.prevent="isDragging = true"
-      @dragleave.prevent="isDragging = false"
+  <div>
+    <BaseNode
+      :id="id"
+      :type="type"
+      :data="nodeData"
+      :label="nodeData.label"
+      :inputs="[]"
+      :outputs="['image']"
+      icon="📷"
+      :selected="selected"
+      @action:upload="handleUpload"
     >
       <div
-        v-if="nodeData.src"
-        class="image-preview"
-        :class="{ dragging: isDragging }"
+        class="image-node-content"
+        @drop="handleDrop"
+        @dragover.prevent
+        @dragenter.prevent="isDragging = true"
+        @dragleave.prevent="isDragging = false"
       >
+        <div
+          v-if="nodeData.src"
+          class="image-preview"
+          :class="{ dragging: isDragging }"
+          @click="showImagePreview = true"
+        >
+          <img :src="nodeData.src" :alt="nodeData.name || nodeData.label" />
+        </div>
+        <div
+          v-else
+          class="image-placeholder"
+          :class="{ dragging: isDragging }"
+        >
+          <span class="placeholder-icon">🖼️</span>
+          <p>{{ isDragging ? 'Drop image here' : 'No image' }}</p>
+        </div>
+
+        <BaseButton variant="success" size="md" @click="handleUpload">
+          {{ nodeData.src ? 'Change Image' : 'Upload Image' }}
+        </BaseButton>
+
+        <div v-if="nodeData.name" class="image-info">
+          <span class="info-label">File:</span>
+          <span class="info-value">{{ nodeData.name }}</span>
+        </div>
+      </div>
+    </BaseNode>
+
+    <!-- Image Preview Modal -->
+    <BaseModal
+      v-model="showImagePreview"
+      :show-header="false"
+      :show-footer="false"
+      size="xl"
+    >
+      <div class="image-preview-modal">
         <img :src="nodeData.src" :alt="nodeData.name || nodeData.label" />
       </div>
-      <div
-        v-else
-        class="image-placeholder"
-        :class="{ dragging: isDragging }"
-      >
-        <span class="placeholder-icon">🖼️</span>
-        <p>{{ isDragging ? 'Drop image here' : 'No image' }}</p>
-      </div>
-
-      <BaseButton variant="success" size="md" @click="handleUpload">
-        {{ nodeData.src ? 'Change Image' : 'Upload Image' }}
-      </BaseButton>
-
-      <div v-if="nodeData.name" class="image-info">
-        <span class="info-label">File:</span>
-        <span class="info-value">{{ nodeData.name }}</span>
-      </div>
-    </div>
-  </BaseNode>
+    </BaseModal>
+  </div>
 </template>
 
 <script setup>
@@ -50,6 +65,7 @@ import { ref, computed } from 'vue'
 import { useNode, useVueFlow } from '@vue-flow/core'
 import BaseNode from '@/components/base/BaseNode.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
 const props = defineProps({
   id: {
@@ -71,6 +87,7 @@ const props = defineProps({
 })
 
 const isDragging = ref(false)
+const showImagePreview = ref(false)
 
 // VueFlow composables
 const { node } = useNode()
@@ -130,8 +147,14 @@ function processFile(file) {
   border-radius: var(--flora-radius-md);
   overflow: hidden;
   border: var(--flora-border-width-medium) solid var(--flora-color-border-default);
-  transition: border-color var(--flora-transition-fast);
+  transition: all var(--flora-transition-fast);
   flex-shrink: 0;
+  cursor: pointer;
+}
+
+.image-preview:hover {
+  border-color: var(--flora-color-accent);
+  box-shadow: var(--flora-shadow-md);
 }
 
 .image-preview.dragging {
@@ -197,5 +220,22 @@ function processFile(file) {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+}
+
+/* Image Preview Modal */
+.image-preview-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 500px;
+  padding: var(--flora-space-4);
+}
+
+.image-preview-modal img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: var(--flora-radius-md);
 }
 </style>
