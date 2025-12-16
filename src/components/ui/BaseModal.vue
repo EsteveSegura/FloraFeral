@@ -150,8 +150,8 @@ function handleOverlayClick() {
 
 .flora-modal-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 12px;
+  right: 12px;
   width: 32px;
   height: 32px;
   display: flex;
