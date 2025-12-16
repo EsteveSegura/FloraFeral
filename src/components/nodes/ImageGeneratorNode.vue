@@ -108,7 +108,7 @@
       </div>
 
       <!-- Generated image preview -->
-      <div v-if="nodeData.lastOutputSrc" class="image-preview">
+      <div v-if="nodeData.lastOutputSrc" class="image-preview" @click="showImagePreview = true">
         <img :src="nodeData.lastOutputSrc" :alt="nodeData.label" />
       </div>
       <div v-else class="image-placeholder">
@@ -151,6 +151,18 @@
       </div>
     </div>
   </BaseNode>
+
+  <!-- Image Preview Modal -->
+  <BaseModal
+    v-model="showImagePreview"
+    :show-header="false"
+    :show-footer="false"
+    size="xl"
+  >
+    <div class="image-preview-modal">
+      <img :src="nodeData.lastOutputSrc" :alt="nodeData.label" />
+    </div>
+  </BaseModal>
   </div>
 </template>
 
@@ -167,6 +179,7 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseLabel from '@/components/ui/BaseLabel.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 import replicateService from '@/services/replicate'
 import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
@@ -195,6 +208,7 @@ const props = defineProps({
 const flowStore = useFlowStore()
 const localPrompt = ref(props.data.prompt || '')
 const isGenerating = ref(false)
+const showImagePreview = ref(false)
 
 // VueFlow composables
 const { node } = useNode()
@@ -449,6 +463,13 @@ async function handleGenerate() {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all var(--flora-transition-fast);
+}
+
+.image-preview:hover {
+  border-color: var(--flora-color-accent);
+  box-shadow: var(--flora-shadow-md);
 }
 
 .image-preview img {
@@ -540,5 +561,22 @@ async function handleGenerate() {
   flex-direction: column;
   gap: var(--flora-space-1);
   min-width: 120px;
+}
+
+/* Image Preview Modal */
+.image-preview-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 500px;
+  padding: var(--flora-space-4);
+}
+
+.image-preview-modal img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: var(--flora-radius-md);
 }
 </style>
