@@ -2,10 +2,31 @@
   <div class="flow-canvas-container">
     <!-- Canvas de VueFlow -->
     <div class="canvas-wrapper" @drop="onDrop" @dragover.prevent @mousemove="onMouseMove">
-      <!-- Toggle button for nodes menu -->
-      <button class="nodes-menu-toggle" @click="isNodesMenuOpen = !isNodesMenuOpen" :title="isNodesMenuOpen ? 'Hide nodes menu' : 'Show nodes menu'">
-        {{ isNodesMenuOpen ? '✕' : '📦' }}
-      </button>
+      <!-- Floating Menu -->
+      <div class="floating-menu">
+        <button
+          class="menu-icon-button"
+          @click="isNodesMenuOpen = !isNodesMenuOpen"
+          :class="{ active: isNodesMenuOpen }"
+          title="Add nodes"
+        >
+          <img src="@/assets/add.svg" alt="Add" />
+        </button>
+        <button
+          class="menu-icon-button"
+          @click="handleExport"
+          title="Export flow"
+        >
+          <img src="@/assets/floppy-disk.svg" alt="Export" />
+        </button>
+        <button
+          class="menu-icon-button"
+          @click="handleImport"
+          title="Import flow"
+        >
+          <img src="@/assets/folder.svg" alt="Import" />
+        </button>
+      </div>
 
       <!-- Floating Sidebar para drag & drop de nodos -->
       <aside v-if="isNodesMenuOpen" class="sidebar">
@@ -20,22 +41,15 @@
           {{ getNodeIcon(nodeDef.type) }} {{ nodeDef.label }}
         </div>
       </aside>
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <BaseButton variant="primary" size="sm" @click="handleExport" title="Export flow to JSON">
-          💾 Export
-        </BaseButton>
-        <BaseButton variant="primary" size="sm" @click="handleImport" title="Import flow from JSON">
-          📂 Import
-        </BaseButton>
-        <input
-          ref="fileInput"
-          type="file"
-          accept=".json,application/json"
-          style="display: none"
-          @change="onFileSelected"
-        />
-      </div>
+
+      <!-- Hidden file input for import -->
+      <input
+        ref="fileInput"
+        type="file"
+        accept=".json,application/json"
+        style="display: none"
+        @change="onFileSelected"
+      />
 
       <VueFlow
         v-model:nodes="flowStore.nodes"
@@ -68,8 +82,6 @@ import { createEdge, createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-
 import nodeRegistry from '@/lib/node-registry'
 import { downloadFlow, loadFlowFromFile } from '@/lib/flow-io'
 import replicateService from '@/services/replicate'
-import BaseButton from '@/components/ui/BaseButton.vue'
-import '@/styles/FlowCanvasView.css'
 
 const flowStore = useFlowStore()
 
@@ -552,3 +564,115 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
+
+<style>
+.flow-canvas-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+}
+
+.canvas-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Floating Menu */
+.floating-menu {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 10;
+  background: var(--flora-color-surface);
+  border: 1px solid var(--flora-color-border-default);
+  border-radius: 50px;
+  padding: 12px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.menu-icon-button {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+   background: var(--flora-color-surface);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--flora-transition-fast);
+  padding: 0;
+}
+
+.menu-icon-button:hover {
+  background: var(--flora-color-surface-hover);
+  border-color: var(--flora-color-accent);
+  transform: scale(1.05);
+}
+
+.menu-icon-button.active {
+  background: var(--flora-color-accent);
+  border-color: var(--flora-color-accent);
+}
+
+.menu-icon-button img {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0) invert(1);
+}
+
+.menu-icon-button.active img {
+  filter: brightness(0) invert(1);
+}
+
+/* Sidebar */
+.sidebar {
+  position: absolute;
+  top: 50%;
+  left: 96px;
+  transform: translateY(-50%);
+  width: 200px;
+  max-height: calc(100vh - 40px);
+  background: var(--flora-color-surface);
+  border: 1px solid var(--flora-color-border-default);
+  border-radius: 12px;
+  padding: 16px;
+  z-index: 9;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar h3 {
+  margin: 0 0 12px 0;
+  font-size: var(--flora-font-size-md);
+  font-weight: var(--flora-font-weight-semibold);
+  color: var(--flora-color-text-primary);
+}
+
+.node-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  background: var(--flora-color-bg-secondary);
+  border: 1px solid var(--flora-color-border-default);
+  border-radius: 8px;
+  cursor: grab;
+  transition: all var(--flora-transition-fast);
+  font-size: var(--flora-font-size-sm);
+  color: var(--flora-color-text-primary);
+}
+
+.node-item:hover {
+  background: var(--flora-color-surface-hover);
+  border-color: var(--flora-color-accent);
+  transform: translateX(2px);
+}
+
+.node-item:active {
+  cursor: grabbing;
+}
+</style>
