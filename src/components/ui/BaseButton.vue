@@ -14,7 +14,7 @@ defineProps({
   variant: {
     type: String,
     default: 'primary',
-    validator: (value) => ['primary', 'success'].includes(value)
+    validator: (value) => ['primary', 'success', 'danger'].includes(value)
   },
   size: {
     type: String,
@@ -107,6 +107,22 @@ defineOptions({
 
 .flora-button--success:active:not(:disabled) {
   background: #16843d;
+  transform: translateY(0);
+}
+
+.flora-button--danger {
+  background: #ef4444;
+  color: var(--flora-color-text-primary);
+}
+
+.flora-button--danger:hover:not(:disabled) {
+  background: #dc2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.flora-button--danger:active:not(:disabled) {
+  background: #b91c1c;
   transform: translateY(0);
 }
 
