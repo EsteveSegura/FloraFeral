@@ -171,6 +171,7 @@ import replicateService from '@/services/replicate'
 import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
+import { convertImageUrlToBase64, isHttpUrl } from '@/lib/image-utils'
 
 const props = defineProps({
   id: {
@@ -346,10 +347,24 @@ async function handleGenerate() {
       params
     })
 
+    // Convert image URL to base64 for persistence
+    let imageData = result.imageUrl
+    if (isHttpUrl(result.imageUrl)) {
+      console.log('Converting Replicate URL to base64 for persistence...')
+      try {
+        imageData = await convertImageUrlToBase64(result.imageUrl)
+        console.log('Image converted to base64 successfully')
+      } catch (error) {
+        console.warn('Failed to convert image to base64, using original URL:', error)
+        // Fallback to original URL if conversion fails
+        imageData = result.imageUrl
+      }
+    }
+
     // Update node with generated image
     updateNodeData(props.id, {
       prompt: promptToUse,
-      lastOutputSrc: result.imageUrl,
+      lastOutputSrc: imageData,
       model: result.model,
       generationId: result.id,
       // Keep existing model params - don't overwrite them
