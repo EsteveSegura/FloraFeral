@@ -418,7 +418,7 @@ function handlePaste() {
 
   // Update label to indicate it's a copy
   if (clonedData.label) {
-    clonedData.label = `${clonedData.label} (Copy)`
+    clonedData.label = `${clonedData.label}`
   }
 
   // Create new node with same type and data
