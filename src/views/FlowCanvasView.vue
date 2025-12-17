@@ -26,6 +26,24 @@
         >
           <img src="@/assets/folder.svg" alt="Import" />
         </button>
+
+        <!-- Separator -->
+        <div class="menu-separator"></div>
+
+        <button
+          class="menu-icon-button"
+          @click="handleLockToggle"
+          :title="isLocked ? 'Unlock' : 'Lock'"
+        >
+          <img :src="isLocked ? LockIcon : UnlockIcon" :alt="isLocked ? 'Unlock' : 'Lock'" />
+        </button>
+        <button
+          class="menu-icon-button"
+          @click="handleFitView"
+          title="Fit View"
+        >
+          <img :src="ReframeIcon" alt="Fit View" />
+        </button>
       </div>
 
       <!-- Floating Sidebar para drag & drop de nodos -->
@@ -61,11 +79,12 @@
         :max-zoom="4"
         :delete-key-code="['Delete', 'Backspace']"
         :multi-selection-key-code="['Meta', 'Control']"
+        :nodes-draggable="!isLocked"
+        :pan-on-drag="!isLocked"
         elevate-edges-on-select
         elevate-nodes-on-select
       >
         <Background pattern-color="#242424" :gap="24" variant="dots" size="2" />
-        <Controls />
       </VueFlow>
     </div>
   </div>
@@ -75,13 +94,15 @@
 import { computed, onMounted, onUnmounted, ref, markRaw, nextTick } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
-import { Controls } from '@vue-flow/controls'
 import { useFlowStore } from '@/stores/flow'
 import { validateConnection } from '@/lib/connection'
 import { createEdge, createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
 import { downloadFlow, loadFlowFromFile } from '@/lib/flow-io'
 import replicateService from '@/services/replicate'
+import LockIcon from '@/assets/lock.svg'
+import UnlockIcon from '@/assets/unlock.svg'
+import ReframeIcon from '@/assets/reframe.svg'
 
 const flowStore = useFlowStore()
 
@@ -89,9 +110,10 @@ const fileInput = ref(null)
 const isNodesMenuOpen = ref(false)
 const copiedNode = ref(null)
 const mousePosition = ref({ x: 0, y: 0 })
+const isLocked = ref(false)
 
 // VueFlow composable
-const { findNode, onConnect, addEdges, viewport, onNodeDragStop } = useVueFlow()
+const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = useVueFlow()
 
 // Register connection handler - use addEdges directly
 onConnect((params) => {
@@ -200,6 +222,15 @@ function getNodeIcon(type) {
     [NODE_TYPES.TEXT_GENERATOR]: '💬'
   }
   return icons[type] || '⚙️'
+}
+
+// Control buttons handlers
+function handleLockToggle() {
+  isLocked.value = !isLocked.value
+}
+
+function handleFitView() {
+  fitView({ duration: 300, padding: 0.2 })
 }
 
 // Drag & Drop
@@ -593,6 +624,12 @@ onUnmounted(() => {
   border-radius: 50px;
   padding: 12px 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.menu-separator {
+  height: 1px;
+  background: var(--flora-color-border-default);
+  margin: 0 8px;
 }
 
 .menu-icon-button {
