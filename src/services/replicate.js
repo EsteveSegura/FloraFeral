@@ -8,6 +8,7 @@ import SEEDREAM_4 from './models/seedream-4'
 import LANG_SEGMENT_ANYTHING from './models/lang-segment-anything'
 import GPT_IMAGE_1 from './models/gpt-image-1'
 import GPT_5 from './models/gpt-5'
+import { useSettingsStore } from '@/stores/settings'
 
 /**
  * Registry of available models
@@ -48,15 +49,32 @@ class ReplicateService {
   }
 
   /**
-   * Get API token from environment or stored value
+   * Get API token from settings store, environment, or stored value
    * @returns {string|null}
    */
   getApiToken() {
-    // Try to get from environment variable first
+    // Try to get from settings store first (highest priority)
+    try {
+      const settingsStore = useSettingsStore()
+      const storeKey = settingsStore.getReplicateApiKey()
+      if (storeKey) {
+        return storeKey
+      }
+    } catch (error) {
+      console.warn('Could not access settings store:', error)
+    }
+
+    // Fallback to stored value
+    if (this.apiToken) {
+      return this.apiToken
+    }
+
+    // Last fallback to environment variable
     if (import.meta.env.VITE_REPLICATE_API_TOKEN) {
       return import.meta.env.VITE_REPLICATE_API_TOKEN
     }
-    return this.apiToken 
+
+    return null
   }
 
   /**
