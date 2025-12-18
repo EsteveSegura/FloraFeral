@@ -105,12 +105,15 @@ export function canNodesConnect(sourceNodeType, targetNodeType) {
  * @param {Object} connection - Connection object
  * @param {string} connection.source - Source node ID
  * @param {string} connection.target - Target node ID
+ * @param {string} connection.sourceHandle - Source handle ID
+ * @param {string} connection.targetHandle - Target handle ID
  * @param {Object} sourceNode - Complete source node
  * @param {Object} targetNode - Complete target node
  * @param {Array} existingEdges - Array of existing edges
+ * @param {Array} allNodes - Array of all nodes (for getEdgePortType)
  * @returns {Object} { valid: boolean, reason?: string }
  */
-export function validateConnection(connection, sourceNode, targetNode, existingEdges = []) {
+export function validateConnection(connection, sourceNode, targetNode, existingEdges = [], allNodes = []) {
   // Validate that nodes exist
   if (!sourceNode) {
     return {
@@ -134,13 +137,28 @@ export function validateConnection(connection, sourceNode, targetNode, existingE
     }
   }
 
-  // Check node type compatibility
+  // Check node type compatibility (general check)
   const nodesCompatibility = canNodesConnect(sourceNode.type, targetNode.type)
   if (!nodesCompatibility.valid) {
     return nodesCompatibility
   }
 
-  // Prevent duplicate connections
+  // IMPORTANT: Validate specific port types if handles are provided
+  if (connection.sourceHandle && connection.targetHandle) {
+    const sourcePortType = getEdgePortType(connection, allNodes.length > 0 ? allNodes : [sourceNode, targetNode], nodeRegistry, true)
+    const targetPortType = getEdgePortType(connection, allNodes.length > 0 ? allNodes : [sourceNode, targetNode], nodeRegistry, false)
+
+    if (sourcePortType && targetPortType) {
+      if (sourcePortType !== targetPortType) {
+        return {
+          valid: false,
+          reason: `Incompatible port types: ${sourcePortType} → ${targetPortType}`
+        }
+      }
+    }
+  }
+
+  // Prevent duplicate connections (same source and target)
   const isDuplicate = existingEdges.some(
     edge => edge.source === connection.source && edge.target === connection.target
   )

@@ -136,8 +136,13 @@ function isValidConnection(connection) {
     connection,
     sourceNode,
     targetNode,
-    flowStore.edges
+    flowStore.edges,
+    flowStore.nodes  // Pass all nodes for port type validation
   )
+
+  if (!validation.valid) {
+    console.warn('Connection rejected:', validation.reason)
+  }
 
   return validation.valid
 }
