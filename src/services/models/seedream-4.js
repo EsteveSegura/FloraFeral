@@ -9,7 +9,7 @@ export const SEEDREAM_4 = {
   owner: 'bytedance',
   version: 'latest',
   category: 'image', // Model category: image generation
-  endpoint: 'http://localhost:1111/v1/models/bytedance/seedream-4/predictions',
+  endpoint: `${import.meta.env.VITE_BASE_URL_API || 'http://localhost:8787'}/v1/models/bytedance/seedream-4/predictions`,
 
   /**
    * Default parameters for the model

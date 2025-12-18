@@ -27,7 +27,7 @@ const MODELS = {
  */
 const DEFAULT_CONFIG = {
   timeout: 120000, // 2 minutes
-  apiUrl: 'http://localhost:1111/v1',
+  apiUrl: (import.meta.env.VITE_BASE_URL_API || 'http://localhost:8787') + '/v1',
   model: 'nano-banana-pro'
 }
 
@@ -283,7 +283,7 @@ class ReplicateService {
    * @private
    */
   _transformUrlToProxy(url) {
-    // Replace https://api.replicate.com/v1 with http://localhost:1111/v1
+    // Replace https://api.replicate.com/v1 with configured API URL
     return url.replace('https://api.replicate.com/v1', this.config.apiUrl)
   }
 

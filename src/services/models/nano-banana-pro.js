@@ -9,7 +9,7 @@ export const NANO_BANANA_PRO = {
   owner: 'google',
   version: 'latest',
   category: 'image', // Model category: image generation
-  endpoint: 'http://localhost:1111/v1/models/google/nano-banana-pro/predictions',
+  endpoint: `${import.meta.env.VITE_BASE_URL_API || 'http://localhost:8787'}/v1/models/google/nano-banana-pro/predictions`,
 
   /**
    * Default parameters for the model

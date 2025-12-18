@@ -9,7 +9,7 @@ export const GPT_5 = {
   owner: 'openai',
   version: 'latest',
   category: 'text', // Model category: text generation
-  endpoint: 'http://localhost:1111/v1/models/openai/gpt-5/predictions',
+  endpoint: `${import.meta.env.VITE_BASE_URL_API || 'http://localhost:8787'}/v1/models/openai/gpt-5/predictions`,
 
   /**
    * Default parameters for the model

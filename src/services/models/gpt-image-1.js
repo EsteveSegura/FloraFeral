@@ -9,7 +9,7 @@ export const GPT_IMAGE_1 = {
   owner: 'openai',
   version: 'latest',
   category: 'image', // Model category: image generation
-  endpoint: 'http://localhost:1111//v1/models/openai/gpt-image-1/predictions',
+  endpoint: `${import.meta.env.VITE_BASE_URL_API || 'http://localhost:8787'}/v1/models/openai/gpt-image-1/predictions`,
 
   /**
    * Default parameters for the model
