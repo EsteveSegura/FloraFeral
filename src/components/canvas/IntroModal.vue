@@ -93,17 +93,17 @@ const examples = [
   {
     id: 'windows-xp',
     title: 'Recreate Windows XP Wallpaper',
-    file: 'https://girlazo.com/examples-floraferal/recreate_windows-xp_wallpapper.json'
+    file: '/examples/recreate_windows-xp_wallpapper.json'
   },
   {
     id: 'materials',
     title: 'Materials Creation',
-    file: 'https://girlazo.com/examples-floraferal/materials_creation.json'
+    file: '/examples/materials_creation.json'
   },
   {
     id: 'toy-packaging',
     title: 'Toy Packaging',
-    file: 'https://girlazo.com/examples-floraferal/toy_packaging.json'
+    file: '/examples/toy_packaging.json'
   }
 ]
 
