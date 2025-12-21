@@ -177,6 +177,11 @@ function startBlank() {
   flex-direction: column;
   gap: var(--flora-space-6);
   padding: var(--flora-space-4);
+  font-family: 'Inter', 'Arial', sans-serif;
+}
+
+.intro-content * {
+  font-family: 'Inter', 'Arial', sans-serif;
 }
 
 /* Files Section */
