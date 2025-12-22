@@ -62,14 +62,6 @@ export const GPT_IMAGE_1 = {
         type: 'select',
         enum: ['auto', 'transparent', 'opaque'],
         default: 'auto'
-      },
-      {
-        key: 'number_of_images',
-        label: 'Number of Images',
-        type: 'number',
-        min: 1,
-        max: 10,
-        default: 1
       }
     ]
   },
