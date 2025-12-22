@@ -2,11 +2,13 @@
  * Composable for Drag & Drop operations
  * Handles dragging nodes from sidebar and dropping them on canvas
  * Also handles dropping image files to create image nodes
+ * Also handles dropping JSON files to load flows
  */
 
 import { createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
+import { loadFlowFromFile } from '@/lib/flow-io'
 
-export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore) {
+export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, vueFlowHelpers = {}) {
   let draggedNodeType = null
   let isDragging = false
 
@@ -87,6 +89,27 @@ export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, 
   }
 
   /**
+   * Handle JSON flow file drop
+   */
+  async function handleJsonFileDrop(file) {
+    try {
+      const result = await loadFlowFromFile(file, flowStore, vueFlowHelpers)
+
+      if (result.success) {
+        console.log('Flow loaded from dropped file:', file.name)
+      } else {
+        console.error('Failed to load flow:', result.error)
+        flowStore.setError(result.error || 'Failed to load flow')
+        setTimeout(() => flowStore.clearError(), 5000)
+      }
+    } catch (error) {
+      console.error('Error loading flow from dropped file:', error)
+      flowStore.setError('Failed to load flow file')
+      setTimeout(() => flowStore.clearError(), 5000)
+    }
+  }
+
+  /**
    * Handle drop on canvas
    */
   function onDrop(event) {
@@ -99,10 +122,19 @@ export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, 
       y: (event.clientY - rect.top - viewport.value.y) / viewport.value.zoom - 50   // Center node (height ~100px)
     }
 
-    // Check if dropping a file (image)
+    // Check if dropping a file
     const files = event.dataTransfer.files
     if (files && files.length > 0) {
       const file = files[0]
+
+      // Check if it's a JSON file (flow)
+      if (file.type === 'application/json' || file.name.endsWith('.json')) {
+        event.preventDefault()
+        handleJsonFileDrop(file)
+        isNodesMenuOpen.value = false
+        return
+      }
+
       // Check if it's an image file
       if (file.type.startsWith('image/')) {
         event.preventDefault()

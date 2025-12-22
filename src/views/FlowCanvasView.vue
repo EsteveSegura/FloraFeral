@@ -110,7 +110,7 @@ const { fileInput, handleExport, handleImport, onFileSelected } = useFlowIO(flow
 const { isLocked, handleLockToggle, handleFitView } = useViewportControls(fitView)
 const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition)
 const { createNodeAtPosition } = useNodeCreation(flowStore)
-const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore)
+const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges })
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
 
 // Setup keyboard shortcuts
