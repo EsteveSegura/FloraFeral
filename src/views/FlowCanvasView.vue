@@ -136,8 +136,11 @@ const availableNodes = computed(() => nodeRegistry.listNodes().filter(node => !n
 function handleClickOutside(event) {
   if (!isNodesMenuOpen.value) return
 
-  const clickedFloatingMenu = floatingMenu.value?.contains(event.target)
-  const clickedSidebar = sidebarMenu.value?.contains(event.target)
+  const floatingMenuEl = floatingMenu.value?.$el || floatingMenu.value
+  const sidebarMenuEl = sidebarMenu.value?.$el || sidebarMenu.value
+
+  const clickedFloatingMenu = floatingMenuEl?.contains(event.target)
+  const clickedSidebar = sidebarMenuEl?.contains(event.target)
 
   if (!clickedFloatingMenu && !clickedSidebar) {
     isNodesMenuOpen.value = false
