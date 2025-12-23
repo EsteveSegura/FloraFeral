@@ -8,6 +8,7 @@ import { NODE_TYPES, PORT_TYPES } from './node-shapes'
 import ImageNode from '@/components/nodes/ImageNode.vue'
 import ImageGeneratorNode from '@/components/nodes/ImageGeneratorNode.vue'
 import PromptNode from '@/components/nodes/PromptNode.vue'
+import PromptTemplateNode from '@/components/nodes/PromptTemplateNode.vue'
 import DiffNode from '@/components/nodes/DiffNode.vue'
 import ImageCompareNode from '@/components/nodes/ImageCompareNode.vue'
 import TextGeneratorNode from '@/components/nodes/TextGeneratorNode.vue'
@@ -56,6 +57,20 @@ export function registerAllNodes() {
     config: {
       category: 'Input',
       color: '#9C27B0'
+    }
+  })
+
+  // Register Prompt Template Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.PROMPT_TEMPLATE,
+    label: 'Prompt Template',
+    description: 'Template node with variables - create reusable prompts with {{VARIABLE}} placeholders',
+    inputs: [PORT_TYPES.PROMPT],
+    outputs: [PORT_TYPES.PROMPT],
+    component: PromptTemplateNode,
+    config: {
+      category: 'Processing',
+      color: '#7C3AED'
     }
   })
 
