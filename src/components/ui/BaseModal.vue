@@ -1,7 +1,13 @@
 <template>
   <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="modelValue" class="flora-modal-overlay" @click="handleOverlayClick">
+    <Transition :name="isDraggingFile ? '' : 'modal'">
+      <div
+        v-if="modelValue"
+        class="flora-modal-overlay"
+        :class="{ 'dragging-file': isDraggingFile }"
+        @click="handleOverlayClick"
+        @dragover="handleDragOver"
+      >
         <div
           class="flora-modal-container"
           :class="[`flora-modal--${size}`]"
@@ -42,6 +48,8 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -72,6 +80,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'close'])
 
+const isDraggingFile = ref(false)
+
 function close() {
   emit('update:modelValue', false)
   emit('close')
@@ -79,6 +89,16 @@ function close() {
 
 function handleOverlayClick() {
   if (props.closeOnOverlay) {
+    close()
+  }
+}
+
+function handleDragOver(event) {
+  // Check if dragging files
+  if (event.dataTransfer && event.dataTransfer.types.includes('Files')) {
+    // Make overlay transparent to events immediately
+    isDraggingFile.value = true
+    // Close modal when dragging files over it
     close()
   }
 }
@@ -99,6 +119,10 @@ function handleOverlayClick() {
   justify-content: center;
   z-index: 1000;
   padding: var(--flora-space-4);
+}
+
+.flora-modal-overlay.dragging-file {
+  pointer-events: none;
 }
 
 /* Modal Container */
