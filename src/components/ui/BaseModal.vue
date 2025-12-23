@@ -85,6 +85,10 @@ const isDraggingFile = ref(false)
 function close() {
   emit('update:modelValue', false)
   emit('close')
+  // Reset dragging state when modal closes
+  setTimeout(() => {
+    isDraggingFile.value = false
+  }, 100)
 }
 
 function handleOverlayClick() {
