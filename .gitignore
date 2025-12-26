@@ -25,3 +25,6 @@ dist-ssr
 
 internal_files/*
 .env
+
+# Large example files
+public/examples/toy_packaging.json
