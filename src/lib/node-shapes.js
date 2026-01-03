@@ -6,6 +6,7 @@ export const NODE_TYPES = {
   IMAGE_GENERATOR: 'image-generator',
   PROMPT: 'prompt',
   PROMPT_TEMPLATE: 'prompt-template',
+  DRAW: 'draw',
   DIFF: 'diff',
   COMPARE: 'compare',
   TEXT_GENERATOR: 'text-generator',
@@ -93,6 +94,10 @@ const NODE_IO_CONFIG = {
   [NODE_TYPES.PROMPT_TEMPLATE]: {
     inputs: [PORT_TYPES.PROMPT],
     outputs: [PORT_TYPES.PROMPT]
+  },
+  [NODE_TYPES.DRAW]: {
+    inputs: [PORT_TYPES.IMAGE],
+    outputs: [PORT_TYPES.IMAGE]
   },
   [NODE_TYPES.DIFF]: {
     inputs: [PORT_TYPES.IMAGE, PORT_TYPES.IMAGE],

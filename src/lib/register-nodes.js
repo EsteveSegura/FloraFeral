@@ -9,6 +9,7 @@ import ImageNode from '@/components/nodes/ImageNode.vue'
 import ImageGeneratorNode from '@/components/nodes/ImageGeneratorNode.vue'
 import PromptNode from '@/components/nodes/PromptNode.vue'
 import PromptTemplateNode from '@/components/nodes/PromptTemplateNode.vue'
+import DrawNode from '@/components/nodes/DrawNode.vue'
 import DiffNode from '@/components/nodes/DiffNode.vue'
 import ImageCompareNode from '@/components/nodes/ImageCompareNode.vue'
 import TextGeneratorNode from '@/components/nodes/TextGeneratorNode.vue'
@@ -71,6 +72,20 @@ export function registerAllNodes() {
     config: {
       category: 'Processing',
       color: '#7C3AED'
+    }
+  })
+
+  // Register Draw Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.DRAW,
+    label: 'Draw',
+    description: 'Draw on images with a painting tool - add annotations, masks, or artwork',
+    inputs: [PORT_TYPES.IMAGE],
+    outputs: [PORT_TYPES.IMAGE],
+    component: DrawNode,
+    config: {
+      category: 'Processing',
+      color: '#F59E0B'
     }
   })
 
