@@ -73,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watchEffect } from 'vue'
 import { useNode, useVueFlow } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flow'
 import { getEdgePortType } from '@/lib/connection'
@@ -142,6 +142,31 @@ const currentImageSrc = computed(() => {
 // Original image (without drawings)
 const originalImageSrc = computed(() => {
   return nodeData.value.originalSrc || connectedImage.value
+})
+
+// Automatically propagate input image to output if no custom drawing exists
+watchEffect(() => {
+  const inputImage = connectedImage.value
+  const currentOutput = nodeData.value.outputSrc
+  const hasStrokes = nodeData.value.strokesData
+
+  // If there's an input image and no output, pass it through
+  if (inputImage && !currentOutput) {
+    updateNodeData(props.id, {
+      originalSrc: inputImage,
+      outputSrc: inputImage,
+      lastOutputSrc: inputImage
+    })
+  }
+  // If input changed and it's different from stored original, reset
+  else if (inputImage && nodeData.value.originalSrc && inputImage !== nodeData.value.originalSrc) {
+    updateNodeData(props.id, {
+      originalSrc: inputImage,
+      outputSrc: inputImage,
+      lastOutputSrc: inputImage,
+      strokesData: null
+    })
+  }
 })
 
 function openDrawingModal() {
