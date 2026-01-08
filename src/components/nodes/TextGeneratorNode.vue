@@ -107,7 +107,7 @@
           <BaseButton
             variant="primary"
             size="md"
-            :disabled="isGenerating || !localPrompt.trim()"
+            :disabled="isGenerating || (!localPrompt.trim() && !connectedPrompt)"
             @click="handleGenerate"
           >
             {{ isGenerating ? 'Generating...' : 'Generate Text' }}
