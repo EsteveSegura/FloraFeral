@@ -13,6 +13,7 @@
             @change="onModelChange"
           >
             <option value="gpt-5">GPT-5</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
           </BaseSelect>
         </div>
 
@@ -52,6 +53,14 @@
             :max="control.max"
             @input="onParamChange(control.key, $event.target.value ? parseInt($event.target.value) : null)"
           />
+
+          <!-- Checkbox Control -->
+          <BaseCheckbox
+            v-else-if="control.type === 'checkbox'"
+            :id="`control-${control.key}`"
+            :model-value="getParamValue(control.key, control.default)"
+            @change="onParamChange(control.key, $event.target.checked)"
+          />
         </div>
       </div>
     </NodeToolbar>
@@ -67,6 +76,7 @@
       :error="nodeData.error"
       icon="💬"
       :selected="selected"
+      :execution-status="executionStatus"
       @action:run="handleGenerate"
     >
       <div class="text-generator-node-content">
@@ -143,11 +153,13 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import BaseLabel from '@/components/ui/BaseLabel.vue'
 import replicateService from '@/services/replicate'
 import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
+import { useWorkflowEvents } from '@/composables/useWorkflowEvents'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -160,6 +172,14 @@ const flowStore = useFlowStore()
 const isGenerating = ref(false)
 const localPrompt = ref('')
 const currentModel = ref('gpt-5')
+
+// Workflow execution integration
+const { onExecutionRequested, executionStatus } = useWorkflowEvents(props.id)
+
+// Register handler for workflow execution
+onExecutionRequested(async () => {
+  await handleGenerate()
+})
 
 // VueFlow composables
 const { node } = useNode()

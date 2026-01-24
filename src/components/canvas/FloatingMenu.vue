@@ -1,4 +1,5 @@
 <template>
+<div class="floating-menu-container">
   <div class="floating-menu">
     <button
       class="menu-icon-button"
@@ -52,6 +53,7 @@
       <img :src="GearIcon" alt="Settings" />
     </button>
   </div>
+</div>
 </template>
 
 <script setup>
@@ -82,15 +84,22 @@ const emit = defineEmits([
 </script>
 
 <style scoped>
-.floating-menu {
+.floating-menu-container {
   position: absolute;
   top: 50%;
   left: 20px;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
   z-index: 10;
+}
+
+.floating-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   background: var(--flora-color-surface);
   border: 1px solid var(--flora-color-border-default);
   border-radius: 50px;

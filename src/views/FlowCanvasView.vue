@@ -5,6 +5,9 @@
       You don't have a Replicate API key, <strong>you cannot make AI inferences</strong> without a key. Get yours <a href="https://youtu.be/ukJTEuO4QUU" target="_blank" rel="noopener noreferrer">here</a>
     </AlertBanner>
 
+    <!-- Workflow Controls (top-left) -->
+    <WorkflowControls style="position: absolute; top: 20px; left: 20px; z-index: 10;" />
+
     <!-- Canvas VueFlow -->
     <div class="canvas-wrapper" @drop="onDrop" @dragover.prevent @mousemove="onMouseMove">
       <!-- Floating Menu -->
@@ -81,6 +84,7 @@ import NodesSidebar from '@/components/canvas/NodesSidebar.vue'
 import SettingsModal from '@/components/canvas/SettingsModal.vue'
 import IntroModal from '@/components/canvas/IntroModal.vue'
 import AlertBanner from '@/components/canvas/AlertBanner.vue'
+import WorkflowControls from '@/components/workflow/WorkflowControls.vue'
 import { useFlowIO } from '@/composables/useFlowIO'
 import { useViewportControls } from '@/composables/useViewportControls'
 import { useCopyPaste } from '@/composables/useCopyPaste'

@@ -90,6 +90,7 @@
     :error="nodeData.error"
     icon="✨"
     :selected="selected"
+    :execution-status="executionStatus"
     @action:run="handleGenerate"
   >
     <div class="generator-node-content">
@@ -185,6 +186,7 @@ import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
 import { convertImageUrlToBase64, isHttpUrl } from '@/lib/image-utils'
+import { useWorkflowEvents } from '@/composables/useWorkflowEvents'
 
 const props = defineProps({
   id: {
@@ -209,6 +211,14 @@ const flowStore = useFlowStore()
 const localPrompt = ref(props.data.prompt || '')
 const isGenerating = ref(false)
 const showImagePreview = ref(false)
+
+// Workflow execution integration
+const { onExecutionRequested, executionStatus } = useWorkflowEvents(props.id)
+
+// Register handler for workflow execution
+onExecutionRequested(async () => {
+  await handleGenerate()
+})
 
 // VueFlow composables
 const { node } = useNode()
@@ -327,7 +337,14 @@ function updatePrompt() {
 async function handleGenerate() {
   // Use connected prompt if available, otherwise use local textarea prompt
   const promptToUse = connectedPrompt.value || localPrompt.value
-  if (!promptToUse.trim() || isGenerating.value) return
+
+  // Already generating - skip
+  if (isGenerating.value) return
+
+  // No prompt available - throw error so workflow executor knows this node failed
+  if (!promptToUse.trim()) {
+    throw new Error('No prompt available. Connect a prompt node or enter a prompt.')
+  }
 
   isGenerating.value = true
 

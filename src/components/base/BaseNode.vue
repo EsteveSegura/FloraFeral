@@ -7,7 +7,12 @@
         selected: isSelected,
         disabled: disabled,
         loading: loading,
-        error: !!error
+        error: !!error,
+        'execution-pending': executionStatus === 'pending',
+        'execution-executing': executionStatus === 'executing',
+        'execution-completed': executionStatus === 'completed',
+        'execution-error': executionStatus === 'error',
+        'execution-skipped': executionStatus === 'skipped'
       }
     ]"
   >
@@ -40,6 +45,11 @@
     >
       <span class="handle-label handle-label-right">{{ output }}</span>
     </Handle>
+
+    <!-- Execution Status Badge -->
+    <div v-if="executionStatus && executionStatus !== 'idle'" class="execution-badge" :class="`badge-${executionStatus}`">
+      <span class="badge-icon">{{ executionBadgeIcon }}</span>
+    </div>
 
     <!-- Header Slot -->
     <div v-if="settingsStore.showNodeHeaders" class="node-header">
@@ -123,6 +133,23 @@ const props = defineProps({
   outputs: {
     type: Array,
     default: () => []
+  },
+  executionStatus: {
+    type: String,
+    default: 'idle',
+    validator: (value) => ['idle', 'pending', 'executing', 'completed', 'error', 'skipped'].includes(value)
+  }
+})
+
+// Computed execution badge icon
+const executionBadgeIcon = computed(() => {
+  switch (props.executionStatus) {
+    case 'pending': return '⏳'
+    case 'executing': return '⚡'
+    case 'completed': return '✓'
+    case 'error': return '✕'
+    case 'skipped': return '⏭'
+    default: return ''
   }
 })
 
@@ -314,6 +341,88 @@ function getPortColor(portType) {
   }
   50% {
     box-shadow: 0 0 0 8px rgba(22, 163, 74, 0);
+  }
+}
+
+/* Execution Status Badge */
+.execution-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--flora-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: var(--flora-font-weight-bold);
+  z-index: 10;
+  border: 2px solid var(--flora-color-surface);
+  box-shadow: var(--flora-shadow-md);
+}
+
+.badge-icon {
+  line-height: 1;
+}
+
+.badge-pending {
+  background: var(--flora-color-bg-tertiary);
+  color: var(--flora-color-text-tertiary);
+}
+
+.badge-executing {
+  background: var(--flora-color-accent);
+  color: white;
+  animation: executingPulse 1s ease-in-out infinite;
+}
+
+.badge-completed {
+  background: var(--flora-color-success);
+  color: white;
+}
+
+.badge-error {
+  background: var(--flora-color-danger);
+  color: white;
+}
+
+.badge-skipped {
+  background: var(--flora-color-bg-tertiary);
+  color: var(--flora-color-text-quaternary);
+  opacity: 0.8;
+}
+
+/* Execution State Node Styles */
+.base-node.execution-pending {
+  opacity: 0.85;
+}
+
+.base-node.execution-executing {
+  border-color: var(--flora-color-accent);
+  box-shadow: 0 0 0 2px var(--flora-color-accent), var(--flora-shadow-md);
+}
+
+.base-node.execution-completed {
+  border-color: var(--flora-color-success);
+}
+
+.base-node.execution-error {
+  border-color: var(--flora-color-danger);
+}
+
+.base-node.execution-skipped {
+  opacity: 0.6;
+}
+
+@keyframes executingPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: var(--flora-shadow-md);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 12px var(--flora-color-accent);
   }
 }
 </style>

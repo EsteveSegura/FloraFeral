@@ -66,7 +66,9 @@ const result = await replicateService.generateImage({
 
 ## Available Models
 
-### nano-banana-pro (Google)
+### Image Generation Models
+
+#### nano-banana-pro (Google)
 
 Fast and efficient image generation model.
 
@@ -77,6 +79,66 @@ Fast and efficient image generation model.
 - `safety_filter_level`: "block_low_and_above", "block_medium_and_above", "block_only_high"
 
 **Input Images:** Supports up to 14 input images
+
+### Text Generation Models
+
+#### GPT-5 (OpenAI)
+
+Advanced language model with reasoning capabilities.
+
+**Parameters:**
+- `reasoning_effort`: "minimal", "low", "medium", "high" (default: "minimal")
+- `verbosity`: "low", "medium", "high" (default: "medium")
+- `max_completion_tokens`: 1-100,000 (optional)
+- `system_prompt`: Custom system instruction (optional)
+
+**Input Images:** Supports multiple input images for multimodal tasks
+
+**Usage:**
+```javascript
+const result = await replicateService.generateText({
+  prompt: "Explain quantum computing",
+  model: "gpt-5",
+  params: {
+    reasoning_effort: "high",
+    verbosity: "medium"
+  }
+})
+```
+
+#### Gemini 2.5 Flash (Google)
+
+Google's hybrid "thinking" AI model optimized for speed and cost-efficiency.
+
+**Parameters:**
+- `temperature`: 0-2 (default: 1) - Controls randomness
+- `top_p`: 0-1 (default: 0.95) - Nucleus sampling parameter
+- `max_output_tokens`: 1-65,535 (default: 65,535)
+- `dynamic_thinking`: boolean (default: false) - Enable adaptive reasoning
+- `thinking_budget`: 0-24,576 (optional) - Fixed reasoning budget
+- `system_instruction`: Custom system instruction (optional)
+
+**Input Images:** Supports up to 10 input images (each up to 7MB)
+
+**Input Videos:** Supports up to 10 input videos (each up to 45 minutes)
+
+**Usage:**
+```javascript
+const result = await replicateService.generateText({
+  prompt: "Analyze this image",
+  imageSrc: ["image1.jpg", "image2.jpg"],
+  model: "gemini-2.5-flash",
+  params: {
+    temperature: 0.7,
+    dynamic_thinking: true,
+    system_instruction: "You are a helpful assistant"
+  }
+})
+```
+
+**References:**
+- [Gemini 2.5 Flash API Documentation](https://replicate.com/google/gemini-2.5-flash/api/api-reference)
+- [Gemini 2.5 Flash Schema](https://replicate.com/google/gemini-2.5-flash/api/schema)
 
 ## Adding New Models
 
@@ -154,6 +216,22 @@ Generate an image using a Replicate model.
 - `status` (string): Generation status
 - `model` (string): Model used
 - `isMock` (boolean): Whether this is a mock response
+
+### `generateText(options)`
+
+Generate text using a Replicate language model.
+
+**Parameters:**
+- `options.prompt` (string, required): Text prompt to send to the model
+- `options.imageSrc` (string|Array<string>, optional): Input image(s) for multimodal tasks
+- `options.model` (string, optional): Model ID (default: "gpt-5")
+- `options.params` (object, optional): Model-specific parameters
+
+**Returns:** Promise<Object>
+- `text` (string): Generated text response
+- `id` (string): Generation ID
+- `status` (string): Generation status
+- `model` (string): Model used
 
 ### `setApiToken(token)`
 
