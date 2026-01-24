@@ -1,84 +1,67 @@
 <template>
-  <div class="workflow-controls" :class="{ expanded: isExpanded }">
+  <div class="workflow-controls">
     <!-- Collapsed state: just the play button -->
     <button
       v-if="!isExpanded && !isExecuting"
-      class="play-button"
+      class="play-button-collapsed"
       @click="handlePlay"
       title="Execute Workflow (Ctrl+Enter)"
     >
-      <span class="play-icon">▶</span>
+      <span class="play-icon-collapsed">▶</span>
     </button>
 
-    <!-- Expanded state: full controls -->
+    <!-- Expanded state: horizontal panel -->
     <div v-else class="controls-panel">
-      <!-- Header with status -->
-      <div class="panel-header">
-        <span class="status-text">{{ statusText }}</span>
-        <button
-          v-if="!isExecuting"
-          class="close-button"
-          @click="collapse"
-          title="Collapse"
-        >
-          ×
-        </button>
+      <!-- Play button -->
+      <button
+        class="play-btn"
+        @click="handlePlay"
+        :disabled="isExecuting"
+        title="Execute Workflow (Ctrl+Enter)"
+      >
+        <svg class="play-icon" viewBox="0 0 8 8" fill="currentColor">
+          <polygon points="0,0 8,4 0,8" />
+        </svg>
+        <span class="play-text">Play</span>
+      </button>
+
+      <!-- Info section -->
+      <div class="info-section">
+        <span class="title">{{ statusText }}</span>
+        <span class="nodes-text">{{ progress.completed }}/{{ progress.total }} nodes</span>
       </div>
 
       <!-- Progress bar -->
-      <div v-if="isExecuting || progress.total > 0" class="progress-section">
-        <div class="progress-bar">
-          <div
-            class="progress-fill"
-            :style="{ width: `${progressPercentage}%` }"
-            :class="progressClass"
-          ></div>
-        </div>
-        <div class="progress-text">
-          {{ progress.completed }}/{{ progress.total }} nodes
-        </div>
-      </div>
-
-      <!-- Control buttons -->
-      <div class="button-group">
-        <!-- Play/Resume button -->
-        <button
-          v-if="canExecute || canResume"
-          class="control-button primary"
-          @click="canResume ? resumeExecution() : handlePlay()"
-          :title="canResume ? 'Resume Execution' : 'Execute Workflow (Ctrl+Enter)'"
-        >
-          <span class="button-icon">▶</span>
-          <span class="button-label">{{ canResume ? 'Resume' : 'Play' }}</span>
-        </button>
-
-        <!-- Pause button -->
-        <button
-          v-if="canPause"
-          class="control-button warning"
-          @click="pauseExecution"
-          title="Pause Execution"
-        >
-          <span class="button-icon">⏸</span>
-          <span class="button-label">Pause</span>
-        </button>
-
-        <!-- Stop button -->
-        <button
-          v-if="canStop"
-          class="control-button danger"
-          @click="stopExecution"
-          title="Stop Execution"
-        >
-          <span class="button-icon">⏹</span>
-          <span class="button-label">Stop</span>
-        </button>
+      <div class="progress-bar-container">
+        <div
+          class="progress-bar-fill"
+          :style="{ width: `${progressPercentage}%` }"
+          :class="progressClass"
+        ></div>
       </div>
 
       <!-- Duration -->
-      <div v-if="executionDuration > 0" class="duration-text">
-        Duration: {{ formatDuration(executionDuration) }}
-      </div>
+      <span v-if="executionDuration > 0" class="duration">{{ formatDuration(executionDuration) }}</span>
+
+      <!-- Close button -->
+      <button
+        v-if="!isExecuting"
+        class="close-btn"
+        @click="collapse"
+        title="Collapse"
+      >
+        ×
+      </button>
+
+      <!-- Stop button (when executing) -->
+      <button
+        v-if="isExecuting"
+        class="stop-btn"
+        @click="stopExecution"
+        title="Stop Execution"
+      >
+        ⏹
+      </button>
     </div>
   </div>
 </template>
@@ -91,16 +74,12 @@ const {
   isExecuting,
   progress,
   hasErrors,
+  wasStopped,
   executionDuration,
   canExecute,
-  canPause,
-  canResume,
-  canStop,
   progressPercentage,
   statusText,
   executeWorkflow,
-  pauseExecution,
-  resumeExecution,
   stopExecution,
   resetExecution
 } = useWorkflowExecution()
@@ -109,7 +88,7 @@ const isExpanded = ref(false)
 
 // Computed progress bar class
 const progressClass = computed(() => {
-  if (hasErrors.value) return 'has-errors'
+  if (hasErrors.value || wasStopped.value) return 'has-errors'
   if (progress.value.percentage === 100) return 'complete'
   return 'running'
 })
@@ -174,183 +153,169 @@ onUnmounted(() => {
 
 <style scoped>
 .workflow-controls {
-  position: relative;
   display: inline-block;
   width: fit-content;
 }
 
 /* Collapsed play button */
-.play-button {
+.play-button-collapsed {
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--flora-color-success);
+  background: #1ac460;
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  transition: all var(--flora-transition-fast);
-  box-shadow: var(--flora-shadow-md);
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.play-button:hover {
-  background: var(--flora-color-success-hover, #15803d);
+.play-button-collapsed:hover {
+  background: #15a352;
   transform: scale(1.05);
-  box-shadow: var(--flora-shadow-lg);
 }
 
-.play-button:active {
+.play-button-collapsed:active {
   transform: scale(0.95);
 }
 
-.play-icon {
+.play-icon-collapsed {
   color: white;
   font-size: 18px;
-  margin-left: 2px; /* Visual centering for play icon */
+  margin-left: 2px;
 }
 
 /* Expanded panel */
 .controls-panel {
-  min-width: 200px;
-  background: var(--flora-color-surface);
-  border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
-  border-radius: var(--flora-radius-lg);
-  padding: var(--flora-space-3);
-  box-shadow: var(--flora-shadow-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--flora-space-3);
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.status-text {
-  font-size: var(--flora-font-size-sm);
-  font-weight: var(--flora-font-weight-semibold);
-  color: var(--flora-color-text-primary);
-}
-
-.close-button {
-  width: 24px;
-  height: 24px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: transparent;
+  gap: 16px;
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Play button inside panel */
+.play-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1ac460;
   border: none;
-  border-radius: var(--flora-radius-sm);
+  border-radius: 4px;
+  padding: 6px 12px;
   cursor: pointer;
-  color: var(--flora-color-text-tertiary);
-  font-size: 18px;
-  transition: all var(--flora-transition-fast);
+  transition: all 0.15s ease;
 }
 
-.close-button:hover {
-  background: var(--flora-color-bg-tertiary);
-  color: var(--flora-color-text-primary);
+.play-btn:hover:not(:disabled) {
+  background: #15a352;
 }
 
-/* Progress section */
-.progress-section {
+.play-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.play-icon {
+  width: 8px;
+  height: 8px;
+  color: white;
+}
+
+.play-text {
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Info section */
+.info-section {
   display: flex;
   flex-direction: column;
-  gap: var(--flora-space-1);
+  gap: 2px;
 }
 
-.progress-bar {
+.title {
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nodes-text {
+  color: #888888;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+}
+
+/* Progress bar */
+.progress-bar-container {
+  width: 120px;
   height: 6px;
-  background: var(--flora-color-bg-tertiary);
-  border-radius: var(--flora-radius-full);
+  background: #333333;
+  border-radius: 3px;
   overflow: hidden;
 }
 
-.progress-fill {
+.progress-bar-fill {
   height: 100%;
+  border-radius: 3px;
   transition: width 0.3s ease;
-  border-radius: var(--flora-radius-full);
 }
 
-.progress-fill.running {
-  background: var(--flora-color-accent);
+.progress-bar-fill.running {
+  background: #1ac460;
 }
 
-.progress-fill.complete {
-  background: var(--flora-color-success);
+.progress-bar-fill.complete {
+  background: #1ac460;
 }
 
-.progress-fill.has-errors {
-  background: var(--flora-color-warning);
-}
-
-.progress-text {
-  font-size: var(--flora-font-size-xs);
-  color: var(--flora-color-text-tertiary);
-}
-
-/* Button group */
-.button-group {
-  display: flex;
-  gap: var(--flora-space-2);
-  flex-wrap: wrap;
-}
-
-.control-button {
-  display: flex;
-  align-items: center;
-  gap: var(--flora-space-1);
-  padding: var(--flora-space-2) var(--flora-space-3);
-  border: none;
-  border-radius: var(--flora-radius-md);
-  cursor: pointer;
-  font-size: var(--flora-font-size-sm);
-  font-weight: var(--flora-font-weight-medium);
-  transition: all var(--flora-transition-fast);
-}
-
-.control-button.primary {
-  background: var(--flora-color-success);
-  color: white;
-}
-
-.control-button.primary:hover {
-  background: var(--flora-color-success-hover, #15803d);
-}
-
-.control-button.warning {
-  background: var(--flora-color-warning);
-  color: white;
-}
-
-.control-button.warning:hover {
-  filter: brightness(0.9);
-}
-
-.control-button.danger {
-  background: var(--flora-color-danger);
-  color: white;
-}
-
-.control-button.danger:hover {
-  filter: brightness(0.9);
-}
-
-.button-icon {
-  font-size: 12px;
-}
-
-.button-label {
-  font-size: var(--flora-font-size-xs);
+.progress-bar-fill.has-errors {
+  background: #ef4444;
 }
 
 /* Duration */
-.duration-text {
-  font-size: var(--flora-font-size-xs);
+.duration {
+  color: #888888;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+}
+
+/* Close button */
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #888888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.close-btn:hover {
   color: white;
-  text-align: center;
+}
+
+/* Stop button */
+.stop-btn {
+  background: #ef4444;
+  border: none;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.stop-btn:hover {
+  background: #dc2626;
 }
 </style>
