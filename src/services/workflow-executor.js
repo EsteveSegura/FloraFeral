@@ -145,6 +145,7 @@ class WorkflowExecutor {
         message: 'Workflow contains a cycle and cannot be executed',
         cyclePath: cycleResult.cyclePath
       }
+      alert(error.message)
       workflowEventBus.emit(WORKFLOW_EVENTS.WORKFLOW_ERROR, error)
       throw new Error(error.message)
     }
