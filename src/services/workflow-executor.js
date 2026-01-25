@@ -3,7 +3,7 @@
  * Orchestrates the execution of workflow nodes in topological order
  */
 
-import { topologicalSort, detectCycles } from '@/lib/graph-utils'
+import { detectCycles } from '@/lib/graph-utils'
 import workflowEventBus, { WORKFLOW_EVENTS } from '@/lib/workflow-events'
 import { useWorkflowExecutionStore } from '@/stores/workflow-execution'
 import { useFlowStore } from '@/stores/flow'
@@ -221,14 +221,6 @@ class WorkflowExecutor {
           break
         }
 
-        // Wait while paused
-        while (this.executionStore.isPaused) {
-          await this.sleep(100)
-          if (!this.executionStore.isExecuting) break
-        }
-
-        if (!this.executionStore.isExecuting) break
-
         // Start as many nodes as possible (up to maxParallelism)
         while (readyQueue.length > 0 && runningNodes.size < this.options.maxParallelism && !stopOnError) {
           const nodeId = readyQueue.shift()
@@ -368,46 +360,6 @@ class WorkflowExecutor {
   }
 
   /**
-   * Execute nodes in a single level with parallelism control
-   * @param {Array<string>} nodeIds - Node IDs to execute
-   */
-  async executeLevelNodes(nodeIds) {
-    const { maxParallelism, continueOnError, nodeTimeout } = this.options
-    const chunks = this.chunkArray(nodeIds, maxParallelism)
-
-    for (const chunk of chunks) {
-      // Check for stop/pause
-      if (!this.executionStore.isExecuting) break
-      while (this.executionStore.isPaused) {
-        await this.sleep(100)
-        if (!this.executionStore.isExecuting) return
-      }
-
-      // Execute chunk in parallel
-      const promises = chunk.map(nodeId => this.executeNode(nodeId, nodeTimeout))
-
-      const results = await Promise.allSettled(promises)
-
-      // Check results
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i]
-        const nodeId = chunk[i]
-
-        if (result.status === 'rejected') {
-          console.error(`Node ${nodeId} execution failed:`, result.reason)
-
-          if (!continueOnError) {
-            throw result.reason
-          }
-
-          // Mark dependent nodes as skipped
-          this.skipDependentNodes(nodeId)
-        }
-      }
-    }
-  }
-
-  /**
    * Execute a single node
    * @param {string} nodeId - Node ID
    * @param {number} timeout - Timeout in ms
@@ -490,28 +442,6 @@ class WorkflowExecutor {
   }
 
   /**
-   * Pause execution
-   */
-  pauseExecution() {
-    this.initStores()
-    this.executionStore.pauseExecution()
-    workflowEventBus.emit(WORKFLOW_EVENTS.WORKFLOW_PAUSED, {
-      executionId: this.executionStore.executionId
-    })
-  }
-
-  /**
-   * Resume execution
-   */
-  resumeExecution() {
-    this.initStores()
-    this.executionStore.resumeExecution()
-    workflowEventBus.emit(WORKFLOW_EVENTS.WORKFLOW_RESUMED, {
-      executionId: this.executionStore.executionId
-    })
-  }
-
-  /**
    * Stop execution
    */
   stopExecution() {
@@ -523,69 +453,6 @@ class WorkflowExecutor {
     workflowEventBus.emit(WORKFLOW_EVENTS.WORKFLOW_STOPPED, {
       executionId: this.executionStore.executionId
     })
-  }
-
-  /**
-   * Get current execution state
-   * @returns {Object}
-   */
-  getExecutionState() {
-    this.initStores()
-    return {
-      isExecuting: this.executionStore.isExecuting,
-      isPaused: this.executionStore.isPaused,
-      progress: this.executionStore.progress,
-      executionId: this.executionStore.executionId,
-      duration: this.executionStore.executionDuration
-    }
-  }
-
-  /**
-   * Retry failed nodes
-   * @returns {Promise<Object>}
-   */
-  async retryFailedNodes() {
-    this.initStores()
-
-    const failedIds = this.executionStore.failedNodeIds
-    if (failedIds.length === 0) {
-      return { success: true, message: 'No failed nodes to retry' }
-    }
-
-    // Reset failed nodes to pending
-    for (const nodeId of failedIds) {
-      this.executionStore.setNodeStatus(nodeId, 'pending')
-    }
-
-    // Re-run execution for just those nodes
-    // This is a simplified retry - for complex cases may need full re-execution
-    for (const nodeId of failedIds) {
-      if (!this.executionStore.isExecuting) break
-
-      try {
-        await this.executeNode(nodeId, this.options.nodeTimeout)
-      } catch (error) {
-        console.error(`Retry failed for node ${nodeId}:`, error)
-      }
-    }
-
-    return {
-      success: !this.executionStore.hasErrors,
-      retriedCount: failedIds.length
-    }
-  }
-
-  // Utility methods
-
-  /**
-   * Split array into chunks
-   */
-  chunkArray(array, size) {
-    const chunks = []
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size))
-    }
-    return chunks
   }
 
   /**

@@ -14,7 +14,6 @@ import { ref, computed } from 'vue'
 export const useWorkflowExecutionStore = defineStore('workflowExecution', () => {
   // Core execution state
   const isExecuting = ref(false)
-  const isPaused = ref(false)
   const wasStopped = ref(false) // Track if execution was stopped (error or manual)
   const executionId = ref(null)
   const startTime = ref(null)
@@ -28,9 +27,6 @@ export const useWorkflowExecutionStore = defineStore('workflowExecution', () => 
 
   // Execution queue (ordered array of node IDs or levels)
   const executionQueue = ref([])
-
-  // Current execution level index
-  const currentLevelIndex = ref(0)
 
   // Computed progress
   const progress = computed(() => {
@@ -119,9 +115,7 @@ export const useWorkflowExecutionStore = defineStore('workflowExecution', () => 
     startTime.value = Date.now()
     endTime.value = null
     isExecuting.value = true
-    isPaused.value = false
     executionQueue.value = levels
-    currentLevelIndex.value = 0
 
     // Initialize all nodes as pending
     nodeStates.value = new Map()
@@ -177,30 +171,11 @@ export const useWorkflowExecutionStore = defineStore('workflowExecution', () => 
   }
 
   /**
-   * Pause execution
-   */
-  function pauseExecution() {
-    if (isExecuting.value && !isPaused.value) {
-      isPaused.value = true
-    }
-  }
-
-  /**
-   * Resume execution
-   */
-  function resumeExecution() {
-    if (isExecuting.value && isPaused.value) {
-      isPaused.value = false
-    }
-  }
-
-  /**
    * Stop execution completely
    */
   function stopExecution() {
     if (isExecuting.value) {
       isExecuting.value = false
-      isPaused.value = false
       wasStopped.value = true
       endTime.value = Date.now()
 
@@ -218,7 +193,6 @@ export const useWorkflowExecutionStore = defineStore('workflowExecution', () => 
    */
   function completeExecution() {
     isExecuting.value = false
-    isPaused.value = false
     endTime.value = Date.now()
   }
 
@@ -227,7 +201,6 @@ export const useWorkflowExecutionStore = defineStore('workflowExecution', () => 
    */
   function resetExecution() {
     isExecuting.value = false
-    isPaused.value = false
     wasStopped.value = false
     executionId.value = null
     startTime.value = null
@@ -235,48 +208,11 @@ export const useWorkflowExecutionStore = defineStore('workflowExecution', () => 
     nodeStates.value = new Map()
     nodeErrors.value = new Map()
     executionQueue.value = []
-    currentLevelIndex.value = 0
-  }
-
-  /**
-   * Clear node states without resetting execution flags
-   * Useful for re-running workflows
-   */
-  function clearNodeStates() {
-    nodeStates.value = new Map()
-    nodeErrors.value = new Map()
-  }
-
-  /**
-   * Advance to next execution level
-   */
-  function advanceLevel() {
-    currentLevelIndex.value++
-  }
-
-  /**
-   * Get current level's nodes
-   * @returns {Array<string>}
-   */
-  function getCurrentLevelNodes() {
-    if (currentLevelIndex.value >= executionQueue.value.length) {
-      return []
-    }
-    return executionQueue.value[currentLevelIndex.value] || []
-  }
-
-  /**
-   * Check if there are more levels to execute
-   * @returns {boolean}
-   */
-  function hasMoreLevels() {
-    return currentLevelIndex.value < executionQueue.value.length
   }
 
   return {
     // State
     isExecuting,
-    isPaused,
     wasStopped,
     executionId,
     startTime,
@@ -284,7 +220,6 @@ export const useWorkflowExecutionStore = defineStore('workflowExecution', () => 
     nodeStates,
     nodeErrors,
     executionQueue,
-    currentLevelIndex,
 
     // Computed
     progress,
@@ -299,14 +234,8 @@ export const useWorkflowExecutionStore = defineStore('workflowExecution', () => 
     setNodeError,
     getNodeError,
     getNodeStatus,
-    pauseExecution,
-    resumeExecution,
     stopExecution,
     completeExecution,
-    resetExecution,
-    clearNodeStates,
-    advanceLevel,
-    getCurrentLevelNodes,
-    hasMoreLevels
+    resetExecution
   }
 })

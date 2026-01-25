@@ -12,8 +12,6 @@ export const WORKFLOW_EVENTS = {
   WORKFLOW_START: 'workflow:start',
   WORKFLOW_COMPLETE: 'workflow:complete',
   WORKFLOW_ERROR: 'workflow:error',
-  WORKFLOW_PAUSED: 'workflow:paused',
-  WORKFLOW_RESUMED: 'workflow:resumed',
   WORKFLOW_STOPPED: 'workflow:stopped',
 
   // Node execution
