@@ -14,6 +14,7 @@ import DiffNode from '@/components/nodes/DiffNode.vue'
 import ImageCompareNode from '@/components/nodes/ImageCompareNode.vue'
 import TextGeneratorNode from '@/components/nodes/TextGeneratorNode.vue'
 import GroupNode from '@/components/nodes/GroupNode.vue'
+import CommentNode from '@/components/nodes/CommentNode.vue'
 
 /**
  * Register all available node types
@@ -143,6 +144,20 @@ export function registerAllNodes() {
       category: 'Layout',
       color: '#16a34a',
       hidden: true // Hidden from the nodes menu
+    }
+  })
+
+  // Register Comment Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.COMMENT,
+    label: 'Comment',
+    description: 'Add notes and comments to your workflow',
+    inputs: [],
+    outputs: [],
+    component: CommentNode,
+    config: {
+      category: 'Helper',
+      color: '#6B7280'
     }
   })
 

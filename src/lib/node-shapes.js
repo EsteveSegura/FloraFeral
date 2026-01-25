@@ -10,7 +10,8 @@ export const NODE_TYPES = {
   DIFF: 'diff',
   COMPARE: 'compare',
   TEXT_GENERATOR: 'text-generator',
-  GROUP: 'group'
+  GROUP: 'group',
+  COMMENT: 'comment'
 }
 
 /**
@@ -112,6 +113,10 @@ const NODE_IO_CONFIG = {
     outputs: [PORT_TYPES.PROMPT]
   },
   [NODE_TYPES.GROUP]: {
+    inputs: [],
+    outputs: []
+  },
+  [NODE_TYPES.COMMENT]: {
     inputs: [],
     outputs: []
   }
