@@ -22,6 +22,21 @@
         </div>
       </div>
 
+      <!-- Save Behavior Section -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Save Behavior</h3>
+        <div class="settings-option">
+          <BaseCheckbox
+            id="skip-save-dialog"
+            v-model="settingsStore.skipSaveDialog"
+            label="Skip save dialog"
+          />
+          <p class="settings-option-description">
+            Use default filename when saving (no dialog prompt)
+          </p>
+        </div>
+      </div>
+
       <!-- API Keys Section -->
       <div class="settings-section">
         <h3 class="settings-section-title">API Keys</h3>

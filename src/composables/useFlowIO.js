@@ -10,11 +10,19 @@ export function useFlowIO(flowStore, { addEdges }) {
   const fileInput = ref(null)
 
   /**
-   * Export current flow to JSON file
+   * Generate default filename for export
    */
-  function handleExport() {
+  function getDefaultFilename() {
+    return `flow-${Date.now()}.json`
+  }
+
+  /**
+   * Export current flow to JSON file
+   * @param {string} filename - Optional filename for the export
+   */
+  function handleExport(filename) {
     try {
-      downloadFlow(flowStore)
+      downloadFlow(flowStore, filename)
       console.log('Flow exported successfully')
     } catch (error) {
       console.error('Error exporting flow:', error)
@@ -61,6 +69,7 @@ export function useFlowIO(flowStore, { addEdges }) {
     fileInput,
     handleExport,
     handleImport,
-    onFileSelected
+    onFileSelected,
+    getDefaultFilename
   }
 }

@@ -16,7 +16,7 @@
         :is-locked="isLocked"
         :is-nodes-menu-open="isNodesMenuOpen"
         @toggle-nodes="isNodesMenuOpen = !isNodesMenuOpen"
-        @export="handleExport"
+        @export="onExportClick"
         @import="handleImport"
         @lock-toggle="handleLockToggle"
         @fit-view="handleFitView"
@@ -68,6 +68,13 @@
 
     <!-- Settings Modal -->
     <SettingsModal v-model="isSettingsModalOpen" />
+
+    <!-- Save Dialog -->
+    <SaveDialog
+      v-model="isSaveDialogOpen"
+      :default-filename="saveDialogFilename"
+      @save="onSaveDialogSave"
+    />
   </div>
 </template>
 
@@ -84,6 +91,7 @@ import NodesSidebar from '@/components/canvas/NodesSidebar.vue'
 import SettingsModal from '@/components/canvas/SettingsModal.vue'
 import IntroModal from '@/components/canvas/IntroModal.vue'
 import AlertBanner from '@/components/canvas/AlertBanner.vue'
+import SaveDialog from '@/components/canvas/SaveDialog.vue'
 import WorkflowControls from '@/components/workflow/WorkflowControls.vue'
 import { useFlowIO } from '@/composables/useFlowIO'
 import { useViewportControls } from '@/composables/useViewportControls'
@@ -101,6 +109,8 @@ const mousePosition = ref({ x: 0, y: 0 })
 const floatingMenu = ref(null)
 const sidebarMenu = ref(null)
 const isSettingsModalOpen = ref(false)
+const isSaveDialogOpen = ref(false)
+const saveDialogFilename = ref('')
 const showIntro = ref(false)
 
 // Show alert if no Replicate API key is configured
@@ -110,7 +120,24 @@ const showAlert = computed(() => !settingsStore.getReplicateApiKey())
 const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = useVueFlow()
 
 // Use composables
-const { fileInput, handleExport, handleImport, onFileSelected } = useFlowIO(flowStore, { addEdges })
+const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })
+
+// Handle export button click - show dialog or export directly based on settings
+function onExportClick() {
+  if (settingsStore.skipSaveDialog) {
+    // Skip dialog, use default filename
+    handleExport(getDefaultFilename())
+  } else {
+    // Show save dialog
+    saveDialogFilename.value = getDefaultFilename()
+    isSaveDialogOpen.value = true
+  }
+}
+
+// Handle save from dialog
+function onSaveDialogSave(filename) {
+  handleExport(filename)
+}
 const { isLocked, handleLockToggle, handleFitView } = useViewportControls(fitView)
 const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition)
 const { createNodeAtPosition } = useNodeCreation(flowStore)

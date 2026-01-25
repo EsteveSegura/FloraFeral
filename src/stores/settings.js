@@ -38,6 +38,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // UI Settings
   const showNodeHeaders = ref(persisted.showNodeHeaders ?? false)
+  const skipSaveDialog = ref(persisted.skipSaveDialog ?? false)
 
   // API Keys Settings
   const replicateApiKey = ref(persisted.replicateApiKey ?? '')
@@ -47,6 +48,7 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(
     () => ({
       showNodeHeaders: showNodeHeaders.value,
+      skipSaveDialog: skipSaveDialog.value,
       replicateApiKey: replicateApiKey.value,
       openaiApiKey: openaiApiKey.value
     }),
@@ -63,6 +65,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setNodeHeaders(value) {
     showNodeHeaders.value = value
+  }
+
+  function setSkipSaveDialog(value) {
+    skipSaveDialog.value = value
   }
 
   // API Keys Actions
@@ -99,12 +105,14 @@ export const useSettingsStore = defineStore('settings', () => {
   return {
     // State
     showNodeHeaders,
+    skipSaveDialog,
     replicateApiKey,
     openaiApiKey,
 
     // Actions
     toggleNodeHeaders,
     setNodeHeaders,
+    setSkipSaveDialog,
     setReplicateApiKey,
     setOpenaiApiKey,
     getReplicateApiKey,
