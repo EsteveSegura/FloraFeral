@@ -57,7 +57,7 @@
       <button
         v-if="isExecuting"
         class="stop-btn"
-        @click="stopExecution"
+        @click="handleStop"
         title="Stop Execution"
       >
         ⏹
@@ -112,6 +112,11 @@ function collapse() {
   }
 }
 
+function handleStop() {
+  stopExecution()
+  resetExecution()
+}
+
 // Format duration as mm:ss or hh:mm:ss
 function formatDuration(seconds) {
   if (seconds < 60) {
@@ -138,7 +143,7 @@ function handleKeydown(event) {
   // Escape to stop
   if (event.key === 'Escape' && isExecuting.value) {
     event.preventDefault()
-    stopExecution()
+    handleStop()
   }
 }
 
