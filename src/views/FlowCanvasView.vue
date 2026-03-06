@@ -15,7 +15,7 @@
         ref="floatingMenu"
         :is-locked="isLocked"
         :is-nodes-menu-open="isNodesMenuOpen"
-        @toggle-nodes="isNodesMenuOpen = !isNodesMenuOpen"
+        @toggle-nodes="toggleNodesMenu"
         @export="onExportClick"
         @import="handleImport"
         @lock-toggle="handleLockToggle"
@@ -28,6 +28,7 @@
         v-if="isNodesMenuOpen"
         ref="sidebarMenu"
         :nodes="availableNodes"
+        :position="menuPosition"
         @drag-start="onDragStart"
         @node-click="onNodeItemClick"
       />
@@ -100,6 +101,7 @@ import { useNodeCreation } from '@/composables/useNodeCreation'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { useGroupManagement } from '@/composables/useGroupManagement'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { useContextMenu } from '@/composables/useContextMenu'
 
 const flowStore = useFlowStore()
 const settingsStore = useSettingsStore()
@@ -117,7 +119,7 @@ const showIntro = ref(false)
 const showAlert = computed(() => !settingsStore.getReplicateApiKey())
 
 // VueFlow composable
-const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = useVueFlow()
+const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView, onPaneContextMenu } = useVueFlow()
 
 // Use composables
 const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })
@@ -138,11 +140,25 @@ function onExportClick() {
 function onSaveDialogSave(filename) {
   handleExport(filename)
 }
+
+// Toggle nodes menu from floating menu (reset position for sidebar mode)
+function toggleNodesMenu() {
+  if (isNodesMenuOpen.value) {
+    closeMenu()
+  } else {
+    resetMenuPosition() // Ensure sidebar mode (no custom position)
+    isNodesMenuOpen.value = true
+  }
+}
 const { isLocked, handleLockToggle, handleFitView } = useViewportControls(fitView)
 const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition)
 const { createNodeAtPosition } = useNodeCreation(flowStore)
-const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges })
+const { menuPosition, handlePaneContextMenu, resetMenuPosition, closeMenu } = useContextMenu(isNodesMenuOpen)
+const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, resetMenuPosition)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
+
+// Register right-click handler for context menu
+onPaneContextMenu(handlePaneContextMenu)
 
 // Setup keyboard shortcuts
 useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowStore })
@@ -174,7 +190,7 @@ function handleClickOutside(event) {
   const clickedSidebar = sidebarMenuEl?.contains(event.target)
 
   if (!clickedFloatingMenu && !clickedSidebar) {
-    isNodesMenuOpen.value = false
+    closeMenu()
   }
 }
 

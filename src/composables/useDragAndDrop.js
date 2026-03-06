@@ -8,7 +8,7 @@
 import { createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
 import { loadFlowFromFile } from '@/lib/flow-io'
 
-export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, vueFlowHelpers = {}) {
+export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, vueFlowHelpers = {}, onMenuClose = null) {
   let draggedNodeType = null
   let isDragging = false
 
@@ -49,6 +49,7 @@ export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, 
 
       createNodeAtPosition(nodeType, position)
       isNodesMenuOpen.value = false
+      if (onMenuClose) onMenuClose()
     }, 100)
   }
 
@@ -154,6 +155,7 @@ export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, 
 
     // Close nodes menu after dropping
     isNodesMenuOpen.value = false
+    if (onMenuClose) onMenuClose()
   }
 
   return {

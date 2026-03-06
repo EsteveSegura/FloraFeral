@@ -1,5 +1,5 @@
 <template>
-  <aside class="nodes-menu">
+  <aside class="nodes-menu" :style="positionStyle">
     <h3 class="header">Nodes</h3>
 
     <!-- AI Section -->
@@ -60,7 +60,23 @@ const props = defineProps({
   nodes: {
     type: Array,
     required: true
+  },
+  position: {
+    type: Object,
+    default: null
   }
+})
+
+// Computed style for positioned menu (double-click mode)
+const positionStyle = computed(() => {
+  if (props.position) {
+    return {
+      left: `${props.position.x}px`,
+      top: `${props.position.y}px`,
+      transform: 'none'
+    }
+  }
+  return null
 })
 
 const emit = defineEmits(['drag-start', 'node-click'])
