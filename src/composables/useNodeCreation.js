@@ -48,6 +48,11 @@ export function useNodeCreation(flowStore) {
       data.prompt = ''
     }
 
+    // Add comment field for comment nodes
+    if (nodeType === NODE_TYPES.COMMENT) {
+      data.comment = ''
+    }
+
     // Create new node using the schema
     const newNode = createNode(
       `node_${Date.now()}`,

@@ -85,7 +85,8 @@ const helperNodes = computed(() =>
     n.type === NODE_TYPES.PROMPT_TEMPLATE ||
     n.type === NODE_TYPES.DRAW ||
     n.type === NODE_TYPES.DIFF ||
-    n.type === NODE_TYPES.COMPARE
+    n.type === NODE_TYPES.COMPARE ||
+    n.type === NODE_TYPES.COMMENT
   )
 )
 
@@ -98,7 +99,8 @@ function getNodeIcon(type) {
     [NODE_TYPES.COMPARE]: '⚖️',
     [NODE_TYPES.TEXT_GENERATOR]: '💬',
     [NODE_TYPES.PROMPT_TEMPLATE]: '📋',
-    [NODE_TYPES.DRAW]: '🖌️'
+    [NODE_TYPES.DRAW]: '🖌️',
+    [NODE_TYPES.COMMENT]: '🗒️'
   }
   return icons[type] || '⚙️'
 }
