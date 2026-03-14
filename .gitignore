@@ -28,3 +28,7 @@ internal_files/*
 
 # Large example files
 public/examples/toy_packaging.json
+.claude
+.vscode
+CLAUDE.md
+test-results
