@@ -6,7 +6,7 @@
 import { ref } from 'vue'
 import { createNode, getNodeIOConfig } from '@/lib/node-shapes'
 
-export function useCopyPaste(flowStore, viewport, mousePosition) {
+export function useCopyPaste(flowStore, viewport, mousePosition, { addEdges }) {
   const copiedNode = ref(null)
 
   /**
@@ -68,18 +68,19 @@ export function useCopyPaste(flowStore, viewport, mousePosition) {
 
     // Recreate input edges pointing to the new node
     const inputEdges = copiedNode.value._inputEdges || []
-    inputEdges.forEach((edgeTemplate, index) => {
-      const sourceExists = flowStore.nodes.some(n => n.id === edgeTemplate.source)
-      if (!sourceExists) return
-
-      flowStore.edges.push({
+    const newEdges = inputEdges
+      .filter(edgeTemplate => flowStore.nodes.some(n => n.id === edgeTemplate.source))
+      .map((edgeTemplate, index) => ({
         id: `edge_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
         source: edgeTemplate.source,
         target: newNode.id,
         sourceHandle: edgeTemplate.sourceHandle,
         targetHandle: edgeTemplate.targetHandle
-      })
-    })
+      }))
+
+    if (newEdges.length > 0) {
+      addEdges(newEdges)
+    }
 
     console.log('Node pasted:', newNode.type, 'with data:', clonedData)
   }

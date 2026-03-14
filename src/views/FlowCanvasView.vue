@@ -151,7 +151,7 @@ function toggleNodesMenu() {
   }
 }
 const { isLocked, handleLockToggle, handleFitView } = useViewportControls(fitView)
-const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition)
+const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition, { addEdges })
 const { createNodeAtPosition } = useNodeCreation(flowStore)
 const { menuPosition, handlePaneContextMenu, resetMenuPosition, closeMenu } = useContextMenu(isNodesMenuOpen)
 const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, resetMenuPosition)
