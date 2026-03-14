@@ -3,7 +3,7 @@
  * Handles copying and pasting nodes
  */
 
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { createNode, getNodeIOConfig } from '@/lib/node-shapes'
 
 export function useCopyPaste(flowStore, viewport, mousePosition, { addEdges }) {
@@ -34,7 +34,7 @@ export function useCopyPaste(flowStore, viewport, mousePosition, { addEdges }) {
   /**
    * Paste copied node at mouse position
    */
-  function handlePaste() {
+  async function handlePaste() {
     if (!copiedNode.value) return
 
     // Calculate position at mouse, accounting for zoom and pan
@@ -65,6 +65,9 @@ export function useCopyPaste(flowStore, viewport, mousePosition, { addEdges }) {
 
     // Add to store
     flowStore.nodes.push(newNode)
+
+    // Wait for VueFlow to process the new node before adding edges
+    await nextTick()
 
     // Recreate input edges pointing to the new node
     const inputEdges = copiedNode.value._inputEdges || []
