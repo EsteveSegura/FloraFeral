@@ -40,7 +40,7 @@ export function useCopyPaste(flowStore, viewport, mousePosition) {
     const ioConfig = getNodeIOConfig(copiedNode.value.type)
 
     // Use already cloned data from handleCopy
-    const clonedData = { ...copiedNode.value.data }
+    const clonedData = JSON.parse(JSON.stringify(copiedNode.value.data))
 
     // Update label to indicate it's a copy
     if (clonedData.label) {
@@ -49,7 +49,7 @@ export function useCopyPaste(flowStore, viewport, mousePosition) {
 
     // Create new node with same type and data
     const newNode = createNode(
-      `node_${Date.now()}`,
+      `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       copiedNode.value.type,
       position,
       clonedData,
