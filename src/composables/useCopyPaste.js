@@ -18,7 +18,14 @@ export function useCopyPaste(flowStore, viewport, mousePosition) {
       // Create a deep copy immediately to capture current state
       copiedNode.value = {
         ...selectedNode,
-        data: JSON.parse(JSON.stringify(selectedNode.data))
+        data: JSON.parse(JSON.stringify(selectedNode.data)),
+        _inputEdges: flowStore.edges
+          .filter(e => e.target === selectedNode.id)
+          .map(e => ({
+            source: e.source,
+            sourceHandle: e.sourceHandle || null,
+            targetHandle: e.targetHandle || null
+          }))
       }
       console.log('Node copied:', selectedNode.type, 'with data:', copiedNode.value.data)
     }
@@ -58,6 +65,22 @@ export function useCopyPaste(flowStore, viewport, mousePosition) {
 
     // Add to store
     flowStore.nodes.push(newNode)
+
+    // Recreate input edges pointing to the new node
+    const inputEdges = copiedNode.value._inputEdges || []
+    inputEdges.forEach((edgeTemplate, index) => {
+      const sourceExists = flowStore.nodes.some(n => n.id === edgeTemplate.source)
+      if (!sourceExists) return
+
+      flowStore.edges.push({
+        id: `edge_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
+        source: edgeTemplate.source,
+        target: newNode.id,
+        sourceHandle: edgeTemplate.sourceHandle,
+        targetHandle: edgeTemplate.targetHandle
+      })
+    })
+
     console.log('Node pasted:', newNode.type, 'with data:', clonedData)
   }
 
