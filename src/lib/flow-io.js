@@ -3,7 +3,53 @@
  * Handles serialization and deserialization of flow canvas state
  */
 
-const FLOW_VERSION = '1.0.0'
+export const FLOW_VERSION = '1.0.0'
+const LEGACY_VERSION = '0.0.0'
+
+/**
+ * Parse a semver string into { major, minor, patch }
+ */
+function parseSemver(version) {
+  const parts = version.split('.').map(Number)
+  return { major: parts[0] || 0, minor: parts[1] || 0, patch: parts[2] || 0 }
+}
+
+/**
+ * Compare two semver strings.
+ * Returns -1 if a < b, 0 if a === b, 1 if a > b
+ */
+function compareSemver(a, b) {
+  const pa = parseSemver(a)
+  const pb = parseSemver(b)
+  for (const key of ['major', 'minor', 'patch']) {
+    if (pa[key] < pb[key]) return -1
+    if (pa[key] > pb[key]) return 1
+  }
+  return 0
+}
+
+/**
+ * Migration registry. Each entry has { from, to, migrate(flowData) }.
+ * Migrations run sequentially on flows with version >= from and < to.
+ *
+ * Example:
+ * { from: '1.0.0', to: '1.1.0', migrate(flowData) { flowData.nodes.forEach(n => n.data.newField ??= null) } }
+ */
+const migrations = []
+
+/**
+ * Run applicable migrations on flowData, mutating it in place.
+ * Updates flowData.version to FLOW_VERSION when done.
+ */
+function migrateFlow(flowData) {
+  for (const m of migrations) {
+    if (compareSemver(flowData.version, m.from) >= 0 && compareSemver(flowData.version, m.to) < 0) {
+      m.migrate(flowData)
+      flowData.version = m.to
+    }
+  }
+  return flowData
+}
 
 /**
  * Export current flow state to JSON
@@ -56,14 +102,14 @@ export function validateFlow(flowData) {
     return { valid: false, errors }
   }
 
-  // Check version
+  // Normalize version — legacy files may not have one
   if (!flowData.version || typeof flowData.version !== 'string') {
-    errors.push('Missing or invalid version')
+    flowData.version = LEGACY_VERSION
   }
 
-  // Check createdAt
+  // Normalize createdAt — legacy files may not have one
   if (!flowData.createdAt || typeof flowData.createdAt !== 'string') {
-    errors.push('Missing or invalid createdAt')
+    flowData.createdAt = new Date().toISOString()
   }
 
   // Check nodes array
@@ -127,6 +173,9 @@ export async function importFlow(flowData, flowStore, vueFlowHelpers = {}) {
       error: `Invalid flow format: ${validation.errors.join(', ')}`
     }
   }
+
+  // Run migrations to bring flow data up to current version
+  migrateFlow(flowData)
 
   try {
     // Clear current flow first (maintains array references)
