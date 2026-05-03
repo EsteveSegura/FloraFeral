@@ -1,14 +1,24 @@
 <template>
   <div class="workflow-controls">
-    <!-- Collapsed state: just the play button -->
-    <button
-      v-if="!isExpanded && !isExecuting"
-      class="play-button-collapsed"
-      @click="handlePlay"
-      title="Execute Workflow (Ctrl+Enter)"
-    >
-      <span class="play-icon-collapsed">▶</span>
-    </button>
+    <!-- Collapsed state: play + tidy buttons -->
+    <div v-if="!isExpanded && !isExecuting" class="collapsed-cluster">
+      <button
+        class="play-button-collapsed"
+        @click="handlePlay"
+        title="Execute Workflow (Ctrl+Enter)"
+      >
+        <span class="play-icon-collapsed">▶</span>
+      </button>
+      <button
+        class="tidy-button-collapsed"
+        @click="handleTidy"
+        title="Auto-tidy layout"
+      >
+        <svg class="tidy-icon-collapsed" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z" />
+        </svg>
+      </button>
+    </div>
 
     <!-- Expanded state: horizontal panel -->
     <div v-else class="controls-panel">
@@ -23,6 +33,19 @@
           <polygon points="0,0 8,4 0,8" />
         </svg>
         <span class="play-text">Play</span>
+      </button>
+
+      <!-- Tidy button -->
+      <button
+        class="tidy-btn"
+        @click="handleTidy"
+        :disabled="isExecuting"
+        title="Auto-tidy layout"
+      >
+        <svg class="tidy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z" />
+        </svg>
+        <span class="tidy-text">Tidy</span>
       </button>
 
       <!-- Info section -->
@@ -68,7 +91,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useVueFlow } from '@vue-flow/core'
 import { useWorkflowExecution } from '@/composables/useWorkflowExecution'
+import { useAutoLayout } from '@/composables/useAutoLayout'
 
 const {
   isExecuting,
@@ -83,6 +108,9 @@ const {
   stopExecution,
   resetExecution
 } = useWorkflowExecution()
+
+const { fitView } = useVueFlow()
+const { autoLayoutNodes } = useAutoLayout()
 
 const isExpanded = ref(false)
 
@@ -115,6 +143,12 @@ function collapse() {
 function handleStop() {
   stopExecution()
   resetExecution()
+}
+
+function handleTidy() {
+  if (isExecuting.value) return
+  autoLayoutNodes()
+  requestAnimationFrame(() => fitView({ padding: 0.2 }))
 }
 
 // Format duration as mm:ss or hh:mm:ss
@@ -162,6 +196,13 @@ onUnmounted(() => {
   width: fit-content;
 }
 
+/* Collapsed cluster (play + tidy) */
+.collapsed-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Collapsed play button */
 .play-button-collapsed {
   width: 44px;
@@ -190,6 +231,36 @@ onUnmounted(() => {
   color: white;
   font-size: 18px;
   margin-left: 2px;
+}
+
+/* Collapsed tidy button */
+.tidy-button-collapsed {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3a3a3a;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tidy-button-collapsed:hover {
+  background: #4a4a4a;
+  transform: scale(1.05);
+}
+
+.tidy-button-collapsed:active {
+  transform: scale(0.95);
+}
+
+.tidy-icon-collapsed {
+  width: 20px;
+  height: 20px;
+  color: white;
 }
 
 /* Expanded panel */
@@ -232,6 +303,41 @@ onUnmounted(() => {
 }
 
 .play-text {
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Tidy button inside panel */
+.tidy-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #3a3a3a;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tidy-btn:hover:not(:disabled) {
+  background: #4a4a4a;
+}
+
+.tidy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tidy-icon {
+  width: 12px;
+  height: 12px;
+  color: white;
+}
+
+.tidy-text {
   color: white;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
