@@ -963,12 +963,22 @@ Runs the whole workflow N times, each run with a different set of inputs, and co
 | `src/lib/batch-io.js` | Which node types can be batch input/output, table column specs, input patches, output readers |
 | `src/lib/prompt-template.js` | Shared `{{VARIABLE}}` extraction and substitution |
 | `src/lib/zip.js` | Dependency-free ZIP writer (STORE + CRC32) for the results download |
+| `src/lib/csv.js` | CSV serialize/parse for the input table round-trip (quoting, delimiter sniffing, BOM) |
 | `src/services/batch-executor.js` | `runBatch()` — the sequential orchestrator |
 | `src/stores/batch.js` | Rows, progress and unsaved-results flag |
 | `src/components/canvas/NodeContextMenu.vue` | Right-click menu to mark a node |
 | `src/components/batch/BatchRunModal.vue` | The panel |
 
 Each row also has its own **Run / Retry** button, which executes only that row through the same `runBatch()` call (with a single-element list) and leaves every other row's result untouched. Useful for re-doing a failed generation or a bad output without paying for the whole batch again.
+
+### CSV round-trip
+
+The input table can be downloaded as CSV, filled in elsewhere (Excel, Sheets, a script) and imported back. The imported row count wins, so handing back 8 rows for a 4-row template is fine.
+
+- **Headers are the human-readable column labels** (`Prompt Template · ANIMAL`). Import matches by exact header; a header that matches nothing is reported as ignored rather than silently landing in the wrong column. A header for a variable the canvas does not declare yet is resolved through its `<node label> · <VARIABLE>` prefix, since a row's own template may introduce it.
+- **Quoting is handled properly** — prompts routinely contain commas, quotes and newlines. Export writes a UTF-8 BOM so Excel does not mangle accents, and import sniffs the delimiter (`,`, `;`, tab) because localized Excel writes `;`.
+- **Images travel as filenames.** An image cell holds `{ name, src }`: the CSV carries only `name`, and the bytes arrive when the user drops the files on the panel's upload zone, where they are matched to every cell referencing that filename. A file used by several rows is applied to all of them.
+- **A row missing its image is skipped, not blocking.** `Run batch` generates the complete rows and marks the rest `Missing image: <file>`; their per-row Run button stays disabled until the file is uploaded.
 
 ### Marking nodes
 

@@ -490,3 +490,139 @@ test.describe('Batch Run', () => {
     await expect(modal.getByRole('button', { name: 'Run batch' })).toBeDisabled()
   })
 })
+
+test.describe('Batch Run CSV', () => {
+  test('downloads a CSV template and imports it back with more rows', async ({ page }) => {
+    const received = []
+    await mockNanaBananaPro(page, { assertRequest: (b) => received.push(b.input.prompt) })
+
+    await setupBlankCanvas(page)
+    await addNodeFromSidebar(page, 'Prompt')
+    await addNodeFromSidebar(page, 'Prompt Template')
+    await addNodeFromSidebar(page, 'Image Generator')
+
+    const promptNode = page.locator('.vue-flow__node-prompt')
+    const templateNode = page.locator('.vue-flow__node-prompt-template')
+    const generatorNode = page.locator('.vue-flow__node-image-generator')
+
+    await positionNodes(page, [
+      { type: 'prompt', x: 20, y: 40 },
+      { type: 'prompt-template', x: 540, y: 40 },
+      { type: 'image-generator', x: 950, y: 40 },
+    ])
+
+    await promptNode.locator('textarea').fill('A {{ANIMAL}} here')
+    await promptNode.locator('textarea').blur()
+    await page.waitForTimeout(300)
+
+    await connectNodes(page, promptNode, 'output-0', templateNode, 'input-0')
+    await connectNodes(page, templateNode, 'output-0', generatorNode, 'input-1')
+    await expect(page.locator('.vue-flow__edge')).toHaveCount(2, { timeout: 5000 })
+
+    await markBatchRole(page, templateNode, 'Mark as batch input')
+    await markBatchRole(page, generatorNode, 'Mark as batch output')
+
+    await page.locator('button[title="Batch Run"]').click()
+    const modal = page.locator('.batch-content')
+    await modal.locator('#run-count').fill('2')
+
+    // Download the template
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      modal.getByRole('button', { name: 'Download CSV' }).click(),
+    ])
+    const csvPath = await download.path()
+    const csvText = await (await import('fs/promises')).readFile(csvPath, 'utf8')
+    expect(csvText).toContain('ANIMAL')
+
+    // Feed back a CSV with 4 rows instead of the 2 downloaded
+    const header = csvText.split(/\r?\n/)[0]
+    const refilled = [header, '1,fox', '2,bear', '3,wolf', '4,deer'].join('\r\n')
+
+    await modal.locator('input[type="file"][accept*="csv"]').setInputFiles({
+      name: 'filled.csv', mimeType: 'text/csv', buffer: Buffer.from(refilled, 'utf8'),
+    })
+
+    const rows = modal.locator('.batch-table tbody tr')
+    await expect(rows).toHaveCount(4)
+    await expect(modal.locator('.csv-message')).toContainText('Imported 4 rows')
+
+    await modal.getByRole('button', { name: 'Run batch' }).click()
+    await expect(rows.nth(3).locator('.status-done')).toBeVisible({ timeout: 60000 })
+
+    expect(received).toEqual(['A fox here', 'A bear here', 'A wolf here', 'A deer here'])
+  })
+
+  test('CSV image filenames block their row until uploaded', async ({ page }) => {
+    const received = []
+    await mockNanaBananaPro(page, { assertRequest: (b) => received.push(b.input.prompt) })
+
+    await setupBlankCanvas(page)
+    await addNodeFromSidebar(page, 'Image')
+    await addNodeFromSidebar(page, 'Image Generator')
+
+    const imageNode = page.locator('.vue-flow__node-image')
+    const generatorNode = page.locator('.vue-flow__node-image-generator')
+
+    await positionNodes(page, [
+      { type: 'image', x: 40, y: 60 },
+      { type: 'image-generator', x: 700, y: 60 },
+    ])
+
+    await connectNodes(page, imageNode, 'output-0', generatorNode, 'input-0')
+    await expect(page.locator('.vue-flow__edge')).toHaveCount(1, { timeout: 5000 })
+
+    await generatorNode.locator('textarea').fill('restyle it')
+    await generatorNode.locator('textarea').blur()
+    await page.waitForTimeout(200)
+
+    await markBatchRole(page, imageNode, 'Mark as batch input')
+    await markBatchRole(page, generatorNode, 'Mark as batch output')
+
+    await page.locator('button[title="Batch Run"]').click()
+    const modal = page.locator('.batch-content')
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      modal.getByRole('button', { name: 'Download CSV' }).click(),
+    ])
+    const csvText = await (await import('fs/promises')).readFile(await download.path(), 'utf8')
+    const header = csvText.split(/\r?\n/)[0]
+
+    // Two rows referencing image files that have not been uploaded
+    const filled = [header, '1,shot-a.png', '2,shot-b.png'].join('\r\n')
+    await modal.locator('input[type="file"][accept*="csv"]').setInputFiles({
+      name: 'filled.csv', mimeType: 'text/csv', buffer: Buffer.from(filled, 'utf8'),
+    })
+
+    const rows = modal.locator('.batch-table tbody tr')
+    await expect(rows).toHaveCount(2)
+
+    // Both files are listed as missing and the rows cannot run
+    await expect(modal.locator('.image-inbox-count')).toContainText('2 missing')
+    await expect(rows.nth(0).getByRole('button', { name: 'Run' })).toBeDisabled()
+
+    // Upload only the first one, matched by filename
+    await modal.locator('.image-dropzone input[type="file"]').setInputFiles({
+      name: 'shot-a.png', mimeType: 'image/png', buffer: await readTestImage(),
+    })
+
+    await expect(modal.locator('.image-inbox-count')).toContainText('1 missing')
+    await expect(rows.nth(0).locator('.col-input img')).toBeVisible()
+    await expect(rows.nth(0).getByRole('button', { name: 'Run' })).toBeEnabled()
+    await expect(rows.nth(1).getByRole('button', { name: 'Run' })).toBeDisabled()
+
+    // Running the batch does the complete row and flags the incomplete one
+    await modal.getByRole('button', { name: 'Run batch' }).click()
+    await expect(rows.nth(0).locator('.status-done')).toBeVisible({ timeout: 40000 })
+    await expect(rows.nth(1).locator('.status-error')).toBeVisible()
+    await expect(rows.nth(1)).toContainText('Missing image: shot-b.png')
+
+    expect(received).toHaveLength(1)
+  })
+})
+
+async function readTestImage() {
+  const fs = await import('fs/promises')
+  return fs.readFile(TEST_IMAGE_PATH)
+}

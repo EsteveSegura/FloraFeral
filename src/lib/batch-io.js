@@ -189,10 +189,21 @@ export function getBatchInputInitialValue(node) {
   }
 
   if (node.type === NODE_TYPES.IMAGE) {
-    return node.data?.src || ''
+    // Images are held as { name, src }: a CSV can reference a file by name
+    // before its bytes have been uploaded
+    return { name: node.data?.name || '', src: node.data?.src || null }
   }
 
   return node.data?.prompt || ''
+}
+
+/**
+ * Is an image cell ready to run? (it has actual bytes, not just a filename)
+ * @param {Object} value - { name, src }
+ * @returns {boolean}
+ */
+export function isImageValueReady(value) {
+  return Boolean(value?.src)
 }
 
 /**
@@ -223,10 +234,9 @@ export function buildBatchInputPatch(node, value, nodes, edges) {
   }
 
   if (node.type === NODE_TYPES.IMAGE) {
-    return {
-      src: value || null,
-      name: value ? (node.data?.name || 'batch-input') : null
-    }
+    if (!value.src) return null
+
+    return { src: value.src, name: value.name || 'batch-input' }
   }
 
   return { prompt: value || '' }
