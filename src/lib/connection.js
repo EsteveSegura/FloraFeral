@@ -65,12 +65,13 @@ function canConnect(sourcePortType, targetPortType) {
 }
 
 /**
- * List every node type + handle that can connect to a given port
+ * List the node types that can connect to a given port
  * Used when a connection is dropped on empty canvas: the menu only offers
- * the nodes (and the specific ports) that are actually connectable
+ * the nodes that are actually connectable, once each, wired to their first
+ * compatible port
  * @param {string} portType - PORT_TYPE of the port the connection started from
  * @param {string} handleType - Handle type of the origin ('source' or 'target')
- * @returns {Array<Object>} Options: { nodeType, label, handleId, portType, portIndex, portCount }
+ * @returns {Array<Object>} Options: { nodeType, label, handleId, portType }
  */
 export function getCompatibleConnectionOptions(portType, handleType) {
   if (!portType) return []
@@ -85,19 +86,14 @@ export function getCompatibleConnectionOptions(portType, handleType) {
     if (nodeDef.config?.hidden) return
 
     const portTypes = lookingForInputs ? nodeDef.inputs : nodeDef.outputs
-    const compatibleIndexes = portTypes
-      .map((type, index) => (canConnect(portType, type) ? index : -1))
-      .filter(index => index !== -1)
+    const portIndex = portTypes.findIndex(type => canConnect(portType, type))
+    if (portIndex === -1) return
 
-    compatibleIndexes.forEach(index => {
-      options.push({
-        nodeType: nodeDef.type,
-        label: nodeDef.label,
-        handleId: `${handlePrefix}-${index}`,
-        portType: portTypes[index],
-        portIndex: index,
-        portCount: compatibleIndexes.length
-      })
+    options.push({
+      nodeType: nodeDef.type,
+      label: nodeDef.label,
+      handleId: `${handlePrefix}-${portIndex}`,
+      portType: portTypes[portIndex]
     })
   })
 

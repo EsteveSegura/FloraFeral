@@ -6,12 +6,12 @@
     <template v-if="isConnectMode">
       <div
         v-for="option in connectionOptions"
-        :key="`${option.nodeType}-${option.handleId}`"
+        :key="option.nodeType"
         class="node-item"
         @click="emit('connect-option', option)"
       >
         <span class="node-icon">{{ getNodeIcon(option.nodeType) }}</span>
-        <span class="node-text">{{ getOptionLabel(option) }}</span>
+        <span class="node-text">{{ option.label }}</span>
       </div>
 
       <span v-if="connectionOptions.length === 0" class="empty-label">
@@ -132,15 +132,6 @@ const helperNodes = computed(() =>
     n.type === NODE_TYPES.COMMENT
   )
 )
-
-/**
- * Label for a connect option, disambiguating nodes with several compatible ports
- * (e.g. Image Diff, whose two inputs are both "image")
- */
-function getOptionLabel(option) {
-  if (option.portCount <= 1) return option.label
-  return `${option.label} · ${option.portType} ${option.portIndex + 1}`
-}
 
 function getNodeIcon(type) {
   const icons = {

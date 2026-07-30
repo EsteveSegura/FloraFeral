@@ -62,9 +62,9 @@ test.describe('Connection dropped on empty canvas', () => {
     await expect(items.filter({ hasText: /^Image Generator$/ })).toHaveCount(1)
     await expect(items.filter({ hasText: /^Text Generator$/ })).toHaveCount(1)
     await expect(items.filter({ hasText: /^Draw$/ })).toHaveCount(1)
-    // Diff and Compare have two image inputs, so both ports are listed
-    await expect(items.filter({ hasText: /^Image Diff · image [12]$/ })).toHaveCount(2)
-    await expect(items.filter({ hasText: /^Image Compare · image [12]$/ })).toHaveCount(2)
+    // Diff and Compare have two image inputs, but are listed once each
+    await expect(items.filter({ hasText: /^Image Diff$/ })).toHaveCount(1)
+    await expect(items.filter({ hasText: /^Image Compare$/ })).toHaveCount(1)
     // Nodes without an `image` input must not be offered
     await expect(items.filter({ hasText: /^Prompt$/ })).toHaveCount(0)
     await expect(items.filter({ hasText: /^Prompt Template$/ })).toHaveCount(0)
@@ -99,6 +99,25 @@ test.describe('Connection dropped on empty canvas', () => {
     })
     // New node is placed to the right of the origin
     expect(target.position.x).toBeGreaterThan(source.position.x)
+  })
+
+  test('wires a node with several compatible ports to its first one', async ({ page }) => {
+    await setupBlankCanvas(page)
+    await addNodeFromSidebar(page, 'Image')
+    await positionNodes(page, [{ type: 'image', x: 100, y: 200 }])
+
+    const imageNode = page.locator('.vue-flow__node-image')
+    await dropConnectionOnPane(page, imageNode, 'output-0', { x: 800, y: 400 })
+
+    await page.locator('.nodes-menu .node-item .node-text')
+      .filter({ hasText: /^Image Diff$/ })
+      .click()
+
+    await expect(page.locator('.vue-flow__node-diff')).toBeVisible()
+
+    const edges = await getEdges(page)
+    expect(edges).toHaveLength(1)
+    expect(edges[0].targetHandle).toBe('input-0')
   })
 
   test('offers only prompt sources when dragging backwards from a prompt input', async ({ page }) => {
