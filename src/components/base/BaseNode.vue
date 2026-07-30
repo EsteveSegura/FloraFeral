@@ -62,10 +62,25 @@
     </div>
 
     <!-- Header Slot -->
-    <div v-if="settingsStore.showNodeHeaders" class="node-header">
+    <div v-if="settingsStore.showNodeHeaders && !hideHeader" class="node-header">
       <slot name="header">
         <span class="node-icon">{{ icon }}</span>
-        <span class="node-label">{{ label }}</span>
+        <input
+          v-if="isEditingLabel"
+          ref="labelInput"
+          v-model="labelDraft"
+          class="node-label-input nodrag nopan"
+          @mousedown.stop
+          @dblclick.stop
+          @keydown="onLabelKeydown"
+          @blur="commitLabel"
+        />
+        <span
+          v-else
+          class="node-label"
+          title="Double-click to rename"
+          @dblclick.stop.prevent="startEditingLabel"
+        >{{ nodeLabel }}</span>
       </slot>
     </div>
 
@@ -93,12 +108,14 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Handle, Position } from '@vue-flow/core'
+import { computed, nextTick, ref } from 'vue'
+import { Handle, Position, useVueFlow } from '@vue-flow/core'
 import { useSettingsStore } from '@/stores/settings'
 import { canTakeBatchRole } from '@/lib/batch-io'
+import { ensureUniqueLabel } from '@/lib/node-label'
 
 const settingsStore = useSettingsStore()
+const { updateNodeData, getNodes } = useVueFlow()
 
 const props = defineProps({
   id: {
@@ -120,6 +137,10 @@ const props = defineProps({
   icon: {
     type: String,
     default: '⚙️'
+  },
+  hideHeader: {
+    type: Boolean,
+    default: false
   },
   selected: {
     type: Boolean,
@@ -173,6 +194,54 @@ const batchRole = computed(() => {
 const emit = defineEmits(['update:data', 'action:run', 'action:upload'])
 
 const isSelected = computed(() => props.selected)
+
+/**
+ * Node title. Read from `data` rather than the `label` prop: VueFlow passes a
+ * top-level `label` down to every node component, and that undefined value
+ * falls through $attrs and wins over the binding the node makes explicitly
+ */
+const nodeLabel = computed(() => props.data?.label || props.label)
+
+// In-place rename of the node title (double-click on the header)
+const isEditingLabel = ref(false)
+const labelDraft = ref('')
+const labelInput = ref(null)
+
+async function startEditingLabel() {
+  labelDraft.value = nodeLabel.value
+  isEditingLabel.value = true
+  await nextTick()
+  labelInput.value?.focus()
+  labelInput.value?.select()
+}
+
+/**
+ * Enter confirms, Escape reverts. Keydown never leaves the input: the canvas
+ * deletes nodes on Backspace and groups them on Ctrl+G
+ */
+function onLabelKeydown(event) {
+  event.stopPropagation()
+
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    commitLabel()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    isEditingLabel.value = false
+  }
+}
+
+function commitLabel() {
+  // Escape already closed the editor; the blur it fires must not re-commit
+  if (!isEditingLabel.value) return
+  isEditingLabel.value = false
+
+  // An empty name would leave the node unidentifiable: keep the previous one
+  const next = labelDraft.value.trim()
+  if (!next || next === nodeLabel.value) return
+
+  updateNodeData(props.id, { label: ensureUniqueLabel(next, getNodes.value, props.id) })
+}
 
 /**
  * Calculate handle position for even distribution
@@ -243,6 +312,26 @@ function getPortColor(portType) {
   font-weight: var(--flora-font-weight-semibold);
   color: var(--flora-color-text-primary);
   font-size: var(--flora-font-size-sm);
+  cursor: text;
+  /* The double-click must not leave a word selected behind the input */
+  user-select: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-label-input {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-weight: var(--flora-font-weight-semibold);
+  font-size: var(--flora-font-size-sm);
+  color: var(--flora-color-text-primary);
+  background: var(--flora-color-surface);
+  border: var(--flora-border-width-thin) solid var(--flora-color-accent);
+  border-radius: var(--flora-radius-sm);
+  padding: 0 var(--flora-space-1);
+  outline: none;
 }
 
 .node-content {

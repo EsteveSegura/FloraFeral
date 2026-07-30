@@ -5,6 +5,7 @@
 
 import { createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
+import { ensureUniqueLabel } from '@/lib/node-label'
 import replicateService from '@/services/replicate'
 
 export function useNodeCreation(flowStore) {
@@ -24,9 +25,9 @@ export function useNodeCreation(flowStore) {
     // Get IO configuration for this node type
     const ioConfig = getNodeIOConfig(nodeType)
 
-    // Create node data
+    // Create node data. Labels name the batch columns, so they must be unique
     const data = {
-      label: `New ${nodeDef.label}`
+      label: ensureUniqueLabel(`New ${nodeDef.label}`, flowStore.nodes)
     }
 
     // Add prompt field and model params for generator nodes

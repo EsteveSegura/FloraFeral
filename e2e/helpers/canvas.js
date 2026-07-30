@@ -5,16 +5,34 @@ export const TEST_IMAGE_PATH = path.resolve(import.meta.dirname, '../assets/back
 
 /**
  * Set a fake API key in localStorage and navigate to a blank canvas.
+ * @param {import('@playwright/test').Page} page
+ * @param {Object} [options]
+ * @param {boolean} [options.showNodeHeaders=false] - Node headers are off by
+ *        default in the app, and the rename editor lives in them
  */
-export async function setupBlankCanvas(page) {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      'flora-settings',
-      JSON.stringify({ replicateApiKey: 'test-api-key-fake', openaiApiKey: 'test-openai-key-fake' })
-    )
+export async function setupBlankCanvas(page, { showNodeHeaders = false } = {}) {
+  await page.addInitScript((settings) => {
+    localStorage.setItem('flora-settings', JSON.stringify(settings))
+  }, {
+    replicateApiKey: 'test-api-key-fake',
+    openaiApiKey: 'test-openai-key-fake',
+    showNodeHeaders,
   })
   await page.goto('/')
   await page.getByText('Blank canvas').click()
+}
+
+/**
+ * Rename a node by double-clicking its header title.
+ * Requires setupBlankCanvas(page, { showNodeHeaders: true }).
+ */
+export async function renameNode(page, nodeLocator, newName) {
+  await nodeLocator.locator('.node-label').dblclick()
+  const input = nodeLocator.locator('.node-label-input')
+  await input.waitFor({ state: 'visible', timeout: 3000 })
+  await input.fill(newName)
+  await input.press('Enter')
+  await input.waitFor({ state: 'detached', timeout: 3000 })
 }
 
 /**

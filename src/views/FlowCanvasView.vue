@@ -43,6 +43,7 @@
         :node="contextNode"
         :position="nodeMenuPosition"
         @set-role="onSetBatchRole"
+        @rename="onRenameNode"
       />
 
       <!-- Hidden file input for import -->
@@ -91,6 +92,14 @@
       :default-filename="saveDialogFilename"
       @save="onSaveDialogSave"
     />
+
+    <!-- Rename Node Dialog -->
+    <RenameNodeDialog
+      v-model="isRenameDialogOpen"
+      :current-label="renameTarget?.data?.label || ''"
+      @rename="onRenameConfirm"
+      @cancel="renameTarget = null"
+    />
   </div>
 </template>
 
@@ -102,6 +111,7 @@ import { useFlowStore } from '@/stores/flow'
 import { useSettingsStore } from '@/stores/settings'
 import { validateConnection } from '@/lib/connection'
 import nodeRegistry from '@/lib/node-registry'
+import { ensureUniqueLabel } from '@/lib/node-label'
 import FloatingMenu from '@/components/canvas/FloatingMenu.vue'
 import NodesSidebar from '@/components/canvas/NodesSidebar.vue'
 import NodeContextMenu from '@/components/canvas/NodeContextMenu.vue'
@@ -109,6 +119,7 @@ import SettingsModal from '@/components/canvas/SettingsModal.vue'
 import IntroModal from '@/components/canvas/IntroModal.vue'
 import AlertBanner from '@/components/canvas/AlertBanner.vue'
 import SaveDialog from '@/components/canvas/SaveDialog.vue'
+import RenameNodeDialog from '@/components/canvas/RenameNodeDialog.vue'
 import WorkflowControls from '@/components/workflow/WorkflowControls.vue'
 import BatchRunModal from '@/components/batch/BatchRunModal.vue'
 import { useFlowIO } from '@/composables/useFlowIO'
@@ -132,6 +143,8 @@ const nodeContextMenu = ref(null)
 const isSettingsModalOpen = ref(false)
 const isSaveDialogOpen = ref(false)
 const isBatchModalOpen = ref(false)
+const isRenameDialogOpen = ref(false)
+const renameTarget = ref(null)
 const saveDialogFilename = ref('')
 const showIntro = ref(false)
 
@@ -218,6 +231,23 @@ function onSetBatchRole(role) {
     updateNodeData(contextNode.value.id, { batchRole: role })
   }
   closeNodeMenu()
+}
+
+// Rename the node targeted by the context menu. Headers can be hidden, and the
+// in-place editor lives in them, so renaming also needs a dialog
+function onRenameNode() {
+  renameTarget.value = contextNode.value
+  isRenameDialogOpen.value = true
+  closeNodeMenu()
+}
+
+function onRenameConfirm(label) {
+  if (renameTarget.value) {
+    updateNodeData(renameTarget.value.id, {
+      label: ensureUniqueLabel(label, flowStore.nodes, renameTarget.value.id)
+    })
+  }
+  renameTarget.value = null
 }
 
 // Setup keyboard shortcuts

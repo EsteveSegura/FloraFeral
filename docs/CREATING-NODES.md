@@ -71,7 +71,11 @@ Create a file in `src/components/nodes/` (e.g., `TextAnalyzerNode.vue`).
     </div>
   </BaseNode>
 </template>
+```
 
+> **About the title:** always pass `:id="id"` and `:data="nodeData"` — BaseNode reads the node name from `data.label` and owns the in-place rename (double-click on the header). Do not write `label` from the node component: it would duplicate logic BaseNode already has, including the uniqueness check (`src/lib/node-label.js`). Pass `:hide-header="true"` if your node must never show a header, like `CommentNode`, whose content is already its text.
+
+```vue
 <script setup>
 import { ref, computed } from 'vue'
 import { useNode, useVueFlow } from '@vue-flow/core'
