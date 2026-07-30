@@ -5,7 +5,8 @@
       v-if="!isExpanded && !isExecuting"
       class="play-button-collapsed"
       @click="handlePlay"
-      title="Execute Workflow (Ctrl+Enter)"
+      :disabled="isBlocked"
+      :title="batchStore.isRunning ? 'Batch run in progress' : 'Execute Workflow (Ctrl+Enter)'"
     >
       <span class="play-icon-collapsed">▶</span>
     </button>
@@ -16,8 +17,8 @@
       <button
         class="play-btn"
         @click="handlePlay"
-        :disabled="isExecuting"
-        title="Execute Workflow (Ctrl+Enter)"
+        :disabled="isBlocked"
+        :title="batchStore.isRunning ? 'Batch run in progress' : 'Execute Workflow (Ctrl+Enter)'"
       >
         <svg class="play-icon" viewBox="0 0 8 8" fill="currentColor">
           <polygon points="0,0 8,4 0,8" />
@@ -69,6 +70,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useWorkflowExecution } from '@/composables/useWorkflowExecution'
+import { useBatchStore } from '@/stores/batch'
 
 const {
   isExecuting,
@@ -84,7 +86,14 @@ const {
   resetExecution
 } = useWorkflowExecution()
 
+const batchStore = useBatchStore()
+
 const isExpanded = ref(false)
+
+// A batch drives the same executor singleton run after run, and between runs
+// `isExecuting` is briefly false - without this guard the user could start a
+// concurrent execution that corrupts the batch
+const isBlocked = computed(() => isExecuting.value || batchStore.isRunning)
 
 // Computed progress bar class
 const progressClass = computed(() => {
@@ -95,6 +104,8 @@ const progressClass = computed(() => {
 
 // Handlers
 async function handlePlay() {
+  if (isBlocked.value) return
+
   isExpanded.value = true
   try {
     // Reset previous execution state before starting
@@ -113,6 +124,10 @@ function collapse() {
 }
 
 function handleStop() {
+  // During a batch, stopping is owned by the batch panel: resetting here would
+  // wipe the execution state the batch is still reading
+  if (batchStore.isRunning) return
+
   stopExecution()
   resetExecution()
 }
@@ -135,13 +150,13 @@ function formatDuration(seconds) {
 // Keyboard shortcut: Ctrl+Enter to execute
 function handleKeydown(event) {
   if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-    if (canExecute.value) {
+    if (canExecute.value && !isBlocked.value) {
       event.preventDefault()
       handlePlay()
     }
   }
   // Escape to stop
-  if (event.key === 'Escape' && isExecuting.value) {
+  if (event.key === 'Escape' && isExecuting.value && !batchStore.isRunning) {
     event.preventDefault()
     handleStop()
   }

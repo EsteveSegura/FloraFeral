@@ -18,6 +18,7 @@
         @toggle-nodes="toggleNodesMenu"
         @export="onExportClick"
         @import="handleImport"
+        @open-batch="isBatchModalOpen = true"
         @lock-toggle="handleLockToggle"
         @fit-view="handleFitView"
         @open-settings="isSettingsModalOpen = true"
@@ -31,6 +32,15 @@
         :position="menuPosition"
         @drag-start="onDragStart"
         @node-click="onNodeItemClick"
+      />
+
+      <!-- Node Context Menu -->
+      <NodeContextMenu
+        v-if="nodeMenuPosition && contextNode"
+        ref="nodeContextMenu"
+        :node="contextNode"
+        :position="nodeMenuPosition"
+        @set-role="onSetBatchRole"
       />
 
       <!-- Hidden file input for import -->
@@ -70,6 +80,9 @@
     <!-- Settings Modal -->
     <SettingsModal v-model="isSettingsModalOpen" />
 
+    <!-- Batch Run Modal -->
+    <BatchRunModal v-model="isBatchModalOpen" :update-node-data="updateNodeData" />
+
     <!-- Save Dialog -->
     <SaveDialog
       v-model="isSaveDialogOpen"
@@ -89,11 +102,13 @@ import { validateConnection } from '@/lib/connection'
 import nodeRegistry from '@/lib/node-registry'
 import FloatingMenu from '@/components/canvas/FloatingMenu.vue'
 import NodesSidebar from '@/components/canvas/NodesSidebar.vue'
+import NodeContextMenu from '@/components/canvas/NodeContextMenu.vue'
 import SettingsModal from '@/components/canvas/SettingsModal.vue'
 import IntroModal from '@/components/canvas/IntroModal.vue'
 import AlertBanner from '@/components/canvas/AlertBanner.vue'
 import SaveDialog from '@/components/canvas/SaveDialog.vue'
 import WorkflowControls from '@/components/workflow/WorkflowControls.vue'
+import BatchRunModal from '@/components/batch/BatchRunModal.vue'
 import { useFlowIO } from '@/composables/useFlowIO'
 import { useViewportControls } from '@/composables/useViewportControls'
 import { useCopyPaste } from '@/composables/useCopyPaste'
@@ -110,8 +125,10 @@ const isNodesMenuOpen = ref(false)
 const mousePosition = ref({ x: 0, y: 0 })
 const floatingMenu = ref(null)
 const sidebarMenu = ref(null)
+const nodeContextMenu = ref(null)
 const isSettingsModalOpen = ref(false)
 const isSaveDialogOpen = ref(false)
+const isBatchModalOpen = ref(false)
 const saveDialogFilename = ref('')
 const showIntro = ref(false)
 
@@ -119,7 +136,7 @@ const showIntro = ref(false)
 const showAlert = computed(() => !settingsStore.getReplicateApiKey())
 
 // VueFlow composable
-const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView, onPaneContextMenu } = useVueFlow()
+const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
 
 // Use composables
 const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })
@@ -153,12 +170,30 @@ function toggleNodesMenu() {
 const { isLocked, handleLockToggle, handleFitView } = useViewportControls(fitView)
 const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition, { addEdges })
 const { createNodeAtPosition } = useNodeCreation(flowStore)
-const { menuPosition, handlePaneContextMenu, resetMenuPosition, closeMenu } = useContextMenu(isNodesMenuOpen)
+const {
+  menuPosition,
+  nodeMenuPosition,
+  contextNode,
+  handlePaneContextMenu,
+  handleNodeContextMenu,
+  resetMenuPosition,
+  closeNodeMenu,
+  closeMenu
+} = useContextMenu(isNodesMenuOpen)
 const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, resetMenuPosition)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
 
-// Register right-click handler for context menu
+// Register right-click handlers for context menus
 onPaneContextMenu(handlePaneContextMenu)
+onNodeContextMenu(handleNodeContextMenu)
+
+// Set (or clear) the batch role of the node targeted by the context menu
+function onSetBatchRole(role) {
+  if (contextNode.value) {
+    updateNodeData(contextNode.value.id, { batchRole: role })
+  }
+  closeNodeMenu()
+}
 
 // Setup keyboard shortcuts
 useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowStore })
@@ -181,6 +216,13 @@ const availableNodes = computed(() => nodeRegistry.listNodes().filter(node => !n
 
 // Close menu when clicking outside
 function handleClickOutside(event) {
+  if (nodeMenuPosition.value) {
+    const nodeMenuEl = nodeContextMenu.value?.$el || nodeContextMenu.value
+    if (!nodeMenuEl?.contains(event.target)) {
+      closeNodeMenu()
+    }
+  }
+
   if (!isNodesMenuOpen.value) return
 
   const floatingMenuEl = floatingMenu.value?.$el || floatingMenu.value
