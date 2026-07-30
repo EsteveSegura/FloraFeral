@@ -30,8 +30,10 @@
         ref="sidebarMenu"
         :nodes="availableNodes"
         :position="menuPosition"
+        :connection-options="pendingConnection ? connectionOptions : null"
         @drag-start="onDragStart"
         @node-click="onNodeItemClick"
+        @connect-option="createNodeFromConnection"
       />
 
       <!-- Node Context Menu -->
@@ -117,6 +119,7 @@ import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { useGroupManagement } from '@/composables/useGroupManagement'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { useConnectionDrop } from '@/composables/useConnectionDrop'
 
 const flowStore = useFlowStore()
 const settingsStore = useSettingsStore()
@@ -136,7 +139,7 @@ const showIntro = ref(false)
 const showAlert = computed(() => !settingsStore.getReplicateApiKey())
 
 // VueFlow composable
-const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
+const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
 
 // Use composables
 const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })
@@ -158,11 +161,18 @@ function onSaveDialogSave(filename) {
   handleExport(filename)
 }
 
+// Close the nodes menu and drop any connection waiting for a node
+function closeNodesMenu() {
+  cancelPendingConnection()
+  closeMenu()
+}
+
 // Toggle nodes menu from floating menu (reset position for sidebar mode)
 function toggleNodesMenu() {
   if (isNodesMenuOpen.value) {
-    closeMenu()
+    closeNodesMenu()
   } else {
+    cancelPendingConnection() // Ensure regular mode (not filtered by a connection)
     resetMenuPosition() // Ensure sidebar mode (no custom position)
     isNodesMenuOpen.value = true
   }
@@ -174,18 +184,33 @@ const {
   menuPosition,
   nodeMenuPosition,
   contextNode,
+  openNodesMenuAt,
   handlePaneContextMenu,
   handleNodeContextMenu,
   resetMenuPosition,
   closeNodeMenu,
   closeMenu
 } = useContextMenu(isNodesMenuOpen)
-const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, resetMenuPosition)
+const {
+  pendingConnection,
+  connectionOptions,
+  handleConnectStart,
+  handleConnectEnd,
+  markConnectionMade,
+  isDropGestureClick,
+  createNodeFromConnection,
+  cancelPendingConnection
+} = useConnectionDrop(flowStore, createNodeAtPosition, screenToFlowCoordinate, { addEdges }, openNodesMenuAt, closeMenu)
+const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, closeNodesMenu)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
 
 // Register right-click handlers for context menus
 onPaneContextMenu(handlePaneContextMenu)
 onNodeContextMenu(handleNodeContextMenu)
+
+// Register connection drop handlers (drag from a handle, release on empty canvas)
+onConnectStart(handleConnectStart)
+onConnectEnd(handleConnectEnd)
 
 // Set (or clear) the batch role of the node targeted by the context menu
 function onSetBatchRole(role) {
@@ -201,6 +226,7 @@ useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowSto
 // Register connection handler - use addEdges directly
 onConnect((params) => {
   // Validation already done by isValidConnection
+  markConnectionMade()
   addEdges([params])
   flowStore.clearError()
 })
@@ -225,6 +251,9 @@ function handleClickOutside(event) {
 
   if (!isNodesMenuOpen.value) return
 
+  // The click that released the connection must not close the menu it just opened
+  if (pendingConnection.value && isDropGestureClick(event)) return
+
   const floatingMenuEl = floatingMenu.value?.$el || floatingMenu.value
   const sidebarMenuEl = sidebarMenu.value?.$el || sidebarMenu.value
 
@@ -232,7 +261,7 @@ function handleClickOutside(event) {
   const clickedSidebar = sidebarMenuEl?.contains(event.target)
 
   if (!clickedFloatingMenu && !clickedSidebar) {
-    closeMenu()
+    closeNodesMenu()
   }
 }
 
