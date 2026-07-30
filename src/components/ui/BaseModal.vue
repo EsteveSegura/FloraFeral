@@ -62,7 +62,7 @@ const props = defineProps({
   size: {
     type: String,
     default: 'md',
-    validator: (value) => ['sm', 'md', 'lg', 'xl'].includes(value)
+    validator: (value) => ['sm', 'md', 'lg', 'xl', 'full'].includes(value)
   },
   closeOnOverlay: {
     type: Boolean,
@@ -75,6 +75,12 @@ const props = defineProps({
   showFooter: {
     type: Boolean,
     default: true
+  },
+  // Modals holding unsaved work (e.g. Batch Run) must not vanish when the user
+  // drags a file over them to fill an input
+  disableDragClose: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -98,6 +104,8 @@ function handleOverlayClick() {
 }
 
 function handleDragOver(event) {
+  if (props.disableDragClose) return
+
   // Check if dragging files
   if (event.dataTransfer && event.dataTransfer.types.includes('Files')) {
     // Make overlay transparent to events immediately
@@ -159,6 +167,13 @@ function handleDragOver(event) {
   max-width: 1000px;
 }
 
+/* Near-fullscreen, for data-heavy panels like Batch Run */
+.flora-modal--full {
+  max-width: 96vw;
+  height: 92vh;
+  max-height: 92vh;
+}
+
 /* Header */
 .flora-modal-header {
   display: flex;
@@ -210,6 +225,15 @@ function handleDragOver(event) {
   padding: var(--flora-space-5);
   overflow-y: auto;
   flex: 1;
+}
+
+/* Full-size modals own their inner scrolling, so the content area must not
+   scroll on its own or panels get a double scrollbar */
+.flora-modal--full .flora-modal-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .flora-modal-content.no-header {

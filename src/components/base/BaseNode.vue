@@ -51,6 +51,16 @@
       <span class="badge-icon">{{ executionBadgeIcon }}</span>
     </div>
 
+    <!-- Batch Role Badge -->
+    <div
+      v-if="batchRole"
+      class="batch-badge"
+      :class="`batch-badge-${batchRole}`"
+      :title="`Batch ${batchRole}`"
+    >
+      {{ batchRole === 'input' ? 'IN' : 'OUT' }}
+    </div>
+
     <!-- Header Slot -->
     <div v-if="settingsStore.showNodeHeaders" class="node-header">
       <slot name="header">
@@ -86,6 +96,7 @@
 import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 import { useSettingsStore } from '@/stores/settings'
+import { canTakeBatchRole } from '@/lib/batch-io'
 
 const settingsStore = useSettingsStore()
 
@@ -151,6 +162,12 @@ const executionBadgeIcon = computed(() => {
     case 'skipped': return '⏭'
     default: return ''
   }
+})
+
+// Batch role marked from the node context menu (persisted in node.data)
+const batchRole = computed(() => {
+  const role = props.data?.batchRole
+  return canTakeBatchRole(props.type, role) ? role : null
 })
 
 const emit = defineEmits(['update:data', 'action:run', 'action:upload'])
@@ -391,6 +408,35 @@ function getPortColor(portType) {
   background: var(--flora-color-bg-tertiary);
   color: var(--flora-color-text-quaternary);
   opacity: 0.8;
+}
+
+/* Batch Role Badge */
+.batch-badge {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 var(--flora-space-2);
+  border-radius: var(--flora-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--flora-font-weight-bold);
+  letter-spacing: 0.05em;
+  color: white;
+  z-index: 10;
+  border: 2px solid var(--flora-color-surface);
+  box-shadow: var(--flora-shadow-md);
+}
+
+.batch-badge-input {
+  background: var(--flora-color-port-image);
+}
+
+.batch-badge-output {
+  background: var(--flora-color-port-prompt);
 }
 
 /* Execution State Node Styles */

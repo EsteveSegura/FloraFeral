@@ -26,7 +26,10 @@ flora/
 │   │   ├── canvas/
 │   │   │   ├── FloatingMenu.vue      # Left sidebar menu with actions
 │   │   │   ├── NodesSidebar.vue      # Draggable nodes list
+│   │   │   ├── NodeContextMenu.vue   # Right-click menu on a node (batch marks)
 │   │   │   └── SettingsModal.vue     # Settings configuration modal
+│   │   ├── batch/
+│   │   │   └── BatchRunModal.vue     # Batch Run panel
 │   │   └── nodes/
 │   │       ├── ImageNode.vue          # Image node
 │   │       ├── PromptNode.vue         # Text/prompt node
@@ -46,14 +49,19 @@ flora/
 │   │   └── FlowCanvasView.vue        # Main app canvas (~177 lines)
 │   ├── stores/
 │   │   ├── flow.js                   # Pinia store (nodes/edges)
-│   │   └── settings.js               # Settings store (app config)
+│   │   ├── settings.js               # Settings store (app config)
+│   │   └── batch.js                  # Batch Run rows and progress
 │   ├── lib/
 │   │   ├── node-shapes.js            # Node schemas and types
 │   │   ├── node-registry.js          # Node component registry
 │   │   ├── connection.js             # Connection validation
-│   │   └── flow-io.js                # Flow export/import
+│   │   ├── flow-io.js                # Flow export/import
+│   │   ├── batch-io.js               # Batch input/output roles and IO
+│   │   ├── prompt-template.js        # Shared {{VARIABLE}} handling
+│   │   └── zip.js                    # ZIP writer for batch results
 │   ├── services/
-│   │   └── replicate.js              # Replicate API integration
+│   │   ├── replicate.js              # Replicate API integration
+│   │   └── batch-executor.js         # Sequential batch orchestrator
 │   └── styles/
 │       └── FlowCanvasView.css        # Canvas styles
 ├── docs/
@@ -944,9 +952,80 @@ export function validateConnection(connection, sourceNode, targetNode, edges) {
 
 ---
 
+## Batch Run
+
+Runs the whole workflow N times, each run with a different set of inputs, and collects the outputs in a table.
+
+**Files:**
+
+| File | Responsibility |
+|------|---------------|
+| `src/lib/batch-io.js` | Which node types can be batch input/output, table column specs, input patches, output readers |
+| `src/lib/prompt-template.js` | Shared `{{VARIABLE}}` extraction and substitution |
+| `src/lib/zip.js` | Dependency-free ZIP writer (STORE + CRC32) for the results download |
+| `src/services/batch-executor.js` | `runBatch()` — the sequential orchestrator |
+| `src/stores/batch.js` | Rows, progress and unsaved-results flag |
+| `src/components/canvas/NodeContextMenu.vue` | Right-click menu to mark a node |
+| `src/components/batch/BatchRunModal.vue` | The panel |
+
+Each row also has its own **Run / Retry** button, which executes only that row through the same `runBatch()` call (with a single-element list) and leaves every other row's result untouched. Useful for re-doing a failed generation or a bad output without paying for the whole batch again.
+
+### Marking nodes
+
+A node's role lives in `node.data.batchRole` (`'input' | 'output'`), set from the node's right-click menu. Since `flow-io.js` serializes `data` as a whole, the marks are saved and loaded with the flow — no format change.
+
+| Role | Allowed types | Field |
+|------|--------------|-------|
+| `input` | `image` | `data.src` |
+| `input` | `prompt` | `data.prompt` |
+| `input` | `prompt-template` | `data.variables` |
+| `output` | `image-generator` | `data.lastOutputSrc` |
+| `output` | `text-generator` | `data.generatedText` |
+
+`BaseNode.vue` renders the IN/OUT badge from `data.batchRole`, so no individual node component needed changes.
+
+### Why runs are sequential
+
+`workflow-executor.js` does not execute nodes itself: it emits `workflow:node:execute:<id>` on the event bus and the **mounted node component** performs the API call. There is one component instance per node on the canvas, so parallel runs would collide. `runBatch()` therefore loops:
+
+```javascript
+for (const run of runs) {
+  applyInputs(run)         // write data of the marked input nodes
+  clearOutputs()           // so "empty" means "produced nothing"
+  await waitForGraphSettled()
+  await workflowExecutor.executeWorkflow({ forceRerun: true })
+  collectOutputs(run)
+}
+restoreSnapshot()          // the canvas goes back to how the user left it
+```
+
+**Three non-obvious behaviours it has to work around:**
+
+1. **Errors are invisible to the executor.** `handleGenerate()` in both generators catches its own API errors and never rethrows, so the bus reports `NODE_COMPLETE` even on failure and `executionStore.nodeErrors` stays empty. The batch subscribes to `NODE_COMPLETE`/`NODE_ERROR` and reads `data.error` **synchronously** in the callback — `ImageGeneratorNode` wipes it 5 seconds later.
+2. **`result.success` is not trustworthy.** `executeWorkflow` reports success when nothing was executable and when the run was stopped. The batch decides per row from the outputs it captured.
+3. **Inputs must be fully propagated before executing.** The executor emits synchronously and the generator reads its `connectedPrompt` computed right away. Chains like `prompt → prompt-template → generator` go through several watchers, so `waitForGraphSettled()` waits until the graph stops changing instead of counting ticks.
+
+**Writing into a node that owns local state.** A node component that mirrors `data` into a local ref will fight an external write. `PromptTemplateNode` keeps `localVariables`, and its `watch(outputPrompt)` republishes **both** `prompt` and `variables` from that local state. When the batch wrote new `variables`, that watcher fired on the same flush and reverted them — the run silently used the value from the canvas. Two things keep this correct:
+
+- The node's `data.variables → localVariables` watcher runs with `flush: 'sync'`, so the external value is adopted before any other watcher can republish stale local state.
+- Inputs are applied **upstream first** (`topologicalSort` from `graph-utils.js`). A PromptTemplate resolves its template from the node feeding it, so if that node is also a batch input it must already hold this run's value.
+
+When the upstream prompt is itself a batch input, each row can carry a different template, so the variable columns are the union of the canvas template's variables and those declared by any row.
+
+While a batch runs, the Play button in `WorkflowControls` is disabled: `isExecuting` briefly drops to `false` between runs, and a concurrent execution would corrupt the executor singleton.
+
+---
+
 ## Architecture Changelog
 
-### v3.0 - Modularization (Current)
+### v3.1 - Batch Run
+
+- ✅ Mark nodes as batch input/output from a node context menu (serializable)
+- ✅ Batch Run panel: N runs, per-run inputs, collected outputs, ZIP download
+- ✅ Sequential batch executor with canvas snapshot/restore
+- ✅ Dependency-free ZIP writer
+
+### v3.0 - Modularization
 
 - ✅ FlowCanvasView reduced from ~850 to ~177 lines (-79.2%)
 - ✅ Extracted 3 UI components (FloatingMenu, NodesSidebar, SettingsModal)

@@ -41,6 +41,7 @@ import { useFlowStore } from '@/stores/flow'
 import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
+import { extractVariables, applyVariables } from '@/lib/prompt-template'
 import BaseNode from '@/components/base/BaseNode.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 
@@ -94,45 +95,21 @@ const inputPrompt = computed(() => {
 })
 
 // Detect variables in the input prompt
-const detectedVariables = computed(() => {
-  if (!inputPrompt.value) return []
-
-  const regex = /\{\{([^}]+)\}\}/g
-  const variables = []
-  let match
-
-  while ((match = regex.exec(inputPrompt.value)) !== null) {
-    const variableName = match[1].trim()
-    if (!variables.includes(variableName)) {
-      variables.push(variableName)
-    }
-  }
-
-  return variables
-})
+const detectedVariables = computed(() => extractVariables(inputPrompt.value))
 
 // Generate output prompt with replaced variables
-const outputPrompt = computed(() => {
-  if (!inputPrompt.value) return ''
+const outputPrompt = computed(() => applyVariables(inputPrompt.value, localVariables.value))
 
-  let result = inputPrompt.value
-
-  // Replace each variable with its value, or remove if empty
-  detectedVariables.value.forEach(variable => {
-    const value = localVariables.value[variable]
-    const regex = new RegExp(`\\{\\{\\s*${variable}\\s*\\}\\}`, 'g')
-
-    if (value && value.trim()) {
-      // Replace with value if it exists and is not empty
-      result = result.replace(regex, value)
-    } else {
-      // Remove the variable placeholder if no value
-      result = result.replace(regex, '')
-    }
-  })
-
-  return result
-})
+// Resync local state when variables are replaced from outside the component
+// (flow import, undo, batch run).
+// Must be sync: `watch(outputPrompt)` below republishes `variables` from local
+// state, so if this adoption waited for the next flush it would lose the race
+// and the external values would be silently reverted.
+watch(() => nodeData.value.variables, (newVariables) => {
+  if (newVariables && newVariables !== localVariables.value) {
+    localVariables.value = newVariables
+  }
+}, { flush: 'sync' })
 
 // Watch for changes in detected variables and initialize missing ones
 watch(detectedVariables, (newVars) => {

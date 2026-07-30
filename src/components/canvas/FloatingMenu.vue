@@ -29,6 +29,17 @@
 
     <button
       class="menu-icon-button"
+      @click="emit('open-batch')"
+      title="Batch Run"
+    >
+      <img :src="BatchIcon" alt="Batch Run" />
+    </button>
+
+    <!-- Separator -->
+    <div class="menu-separator"></div>
+
+    <button
+      class="menu-icon-button"
       @click="emit('lock-toggle')"
       :title="isLocked ? 'Unlock' : 'Lock'"
     >
@@ -61,6 +72,7 @@ import LockIcon from '@/assets/lock.svg'
 import UnlockIcon from '@/assets/unlock.svg'
 import ReframeIcon from '@/assets/reframe.svg'
 import GearIcon from '@/assets/gear.svg'
+import BatchIcon from '@/assets/batch.svg'
 
 defineProps({
   isLocked: {
@@ -77,6 +89,7 @@ const emit = defineEmits([
   'toggle-nodes',
   'export',
   'import',
+  'open-batch',
   'lock-toggle',
   'fit-view',
   'open-settings'
