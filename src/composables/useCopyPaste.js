@@ -3,10 +3,10 @@
  * Handles copying and pasting nodes
  */
 
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { createNode, getNodeIOConfig } from '@/lib/node-shapes'
 
-export function useCopyPaste(flowStore, viewport, mousePosition) {
+export function useCopyPaste(flowStore, viewport, mousePosition, { addEdges }) {
   const copiedNode = ref(null)
 
   /**
@@ -18,7 +18,14 @@ export function useCopyPaste(flowStore, viewport, mousePosition) {
       // Create a deep copy immediately to capture current state
       copiedNode.value = {
         ...selectedNode,
-        data: JSON.parse(JSON.stringify(selectedNode.data))
+        data: JSON.parse(JSON.stringify(selectedNode.data)),
+        _inputEdges: flowStore.edges
+          .filter(e => e.target === selectedNode.id)
+          .map(e => ({
+            source: e.source,
+            sourceHandle: e.sourceHandle || null,
+            targetHandle: e.targetHandle || null
+          }))
       }
       console.log('Node copied:', selectedNode.type, 'with data:', copiedNode.value.data)
     }
@@ -27,7 +34,7 @@ export function useCopyPaste(flowStore, viewport, mousePosition) {
   /**
    * Paste copied node at mouse position
    */
-  function handlePaste() {
+  async function handlePaste() {
     if (!copiedNode.value) return
 
     // Calculate position at mouse, accounting for zoom and pan
@@ -58,6 +65,26 @@ export function useCopyPaste(flowStore, viewport, mousePosition) {
 
     // Add to store
     flowStore.nodes.push(newNode)
+
+    // Wait for VueFlow to process the new node before adding edges
+    await nextTick()
+
+    // Recreate input edges pointing to the new node
+    const inputEdges = copiedNode.value._inputEdges || []
+    const newEdges = inputEdges
+      .filter(edgeTemplate => flowStore.nodes.some(n => n.id === edgeTemplate.source))
+      .map((edgeTemplate, index) => ({
+        id: `edge_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
+        source: edgeTemplate.source,
+        target: newNode.id,
+        sourceHandle: edgeTemplate.sourceHandle,
+        targetHandle: edgeTemplate.targetHandle
+      }))
+
+    if (newEdges.length > 0) {
+      addEdges(newEdges)
+    }
+
     console.log('Node pasted:', newNode.type, 'with data:', clonedData)
   }
 
