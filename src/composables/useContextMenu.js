@@ -42,19 +42,28 @@ export function useContextMenu(isNodesMenuOpen) {
   }
 
   /**
-   * Handle right-click on empty canvas to show context menu
+   * Open the nodes menu at a given screen position, bounded to the window
+   * @param {number} clientX - Screen X coordinate
+   * @param {number} clientY - Screen Y coordinate
    */
-  function handlePaneContextMenu(event) {
+  function openNodesMenuAt(clientX, clientY) {
     const canvasWrapper = document.querySelector('.canvas-wrapper')
     if (!canvasWrapper) return
 
     const rect = canvasWrapper.getBoundingClientRect()
-    const clickX = event.clientX - rect.left
-    const clickY = event.clientY - rect.top
+    const posX = clientX - rect.left
+    const posY = clientY - rect.top
 
-    menuPosition.value = calculateBoundedPosition(clickX, clickY, rect)
+    menuPosition.value = calculateBoundedPosition(posX, posY, rect)
     closeNodeMenu()
     isNodesMenuOpen.value = true
+  }
+
+  /**
+   * Handle right-click on empty canvas to show context menu
+   */
+  function handlePaneContextMenu(event) {
+    openNodesMenuAt(event.clientX, event.clientY)
   }
 
   /**
@@ -107,6 +116,7 @@ export function useContextMenu(isNodesMenuOpen) {
     menuPosition,
     nodeMenuPosition,
     contextNode,
+    openNodesMenuAt,
     handlePaneContextMenu,
     handleNodeContextMenu,
     resetMenuPosition,

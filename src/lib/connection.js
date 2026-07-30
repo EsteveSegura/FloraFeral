@@ -32,6 +32,28 @@ export function getEdgePortType(edge, nodes, registry, isSource = true) {
 }
 
 /**
+ * Get the PORT_TYPE of a single handle from the registry
+ * Handle IDs follow the `input-<index>` / `output-<index>` convention
+ * @param {string} nodeType - Node type
+ * @param {string} handleId - Handle ID (e.g., "output-0")
+ * @param {string} handleType - VueFlow handle type ('source' or 'target')
+ * @returns {string|null} PORT_TYPE ('image', 'prompt') or null
+ */
+export function getHandlePortType(nodeType, handleId, handleType) {
+  if (!nodeType || !handleId) return null
+
+  const nodeDef = nodeRegistry.getNodeDef(nodeType)
+  if (!nodeDef) return null
+
+  const handleIndex = parseInt(handleId.split('-')[1])
+  if (isNaN(handleIndex)) return null
+
+  const portTypes = handleType === 'source' ? nodeDef.outputs : nodeDef.inputs
+
+  return portTypes[handleIndex] || null
+}
+
+/**
  * Validates if two port types are compatible to connect (private)
  * @param {string} sourcePortType - Output port type
  * @param {string} targetPortType - Input port type
@@ -40,6 +62,46 @@ export function getEdgePortType(edge, nodes, registry, isSource = true) {
 function canConnect(sourcePortType, targetPortType) {
   // Ports must be of the same type to connect
   return sourcePortType === targetPortType
+}
+
+/**
+ * List every node type + handle that can connect to a given port
+ * Used when a connection is dropped on empty canvas: the menu only offers
+ * the nodes (and the specific ports) that are actually connectable
+ * @param {string} portType - PORT_TYPE of the port the connection started from
+ * @param {string} handleType - Handle type of the origin ('source' or 'target')
+ * @returns {Array<Object>} Options: { nodeType, label, handleId, portType, portIndex, portCount }
+ */
+export function getCompatibleConnectionOptions(portType, handleType) {
+  if (!portType) return []
+
+  // Dragging from an output looks for inputs, and the other way around
+  const lookingForInputs = handleType === 'source'
+  const handlePrefix = lookingForInputs ? 'input' : 'output'
+
+  const options = []
+
+  nodeRegistry.listNodes().forEach(nodeDef => {
+    if (nodeDef.config?.hidden) return
+
+    const portTypes = lookingForInputs ? nodeDef.inputs : nodeDef.outputs
+    const compatibleIndexes = portTypes
+      .map((type, index) => (canConnect(portType, type) ? index : -1))
+      .filter(index => index !== -1)
+
+    compatibleIndexes.forEach(index => {
+      options.push({
+        nodeType: nodeDef.type,
+        label: nodeDef.label,
+        handleId: `${handlePrefix}-${index}`,
+        portType: portTypes[index],
+        portIndex: index,
+        portCount: compatibleIndexes.length
+      })
+    })
+  })
+
+  return options
 }
 
 /**

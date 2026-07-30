@@ -1,54 +1,73 @@
 <template>
   <aside class="nodes-menu" :style="positionStyle">
-    <h3 class="header">Nodes</h3>
+    <h3 class="header">{{ isConnectMode ? 'Connect to' : 'Nodes' }}</h3>
 
-    <!-- AI Section -->
-    <span class="section-label">AI</span>
-    <div
-      v-for="nodeDef in aiNodes"
-      :key="nodeDef.type"
-      class="node-item"
-      draggable="true"
-      @dragstart="emit('drag-start', $event, nodeDef.type)"
-      @click="emit('node-click', nodeDef.type)"
-    >
-      <span class="node-icon">{{ getNodeIcon(nodeDef.type) }}</span>
-      <span class="node-text">{{ nodeDef.label }}</span>
-    </div>
+    <!-- Connect Mode: only the nodes/ports compatible with the dropped connection -->
+    <template v-if="isConnectMode">
+      <div
+        v-for="option in connectionOptions"
+        :key="`${option.nodeType}-${option.handleId}`"
+        class="node-item"
+        @click="emit('connect-option', option)"
+      >
+        <span class="node-icon">{{ getNodeIcon(option.nodeType) }}</span>
+        <span class="node-text">{{ getOptionLabel(option) }}</span>
+      </div>
 
-    <!-- Separator -->
-    <div class="separator"></div>
+      <span v-if="connectionOptions.length === 0" class="empty-label">
+        No compatible nodes
+      </span>
+    </template>
 
-    <!-- Inputs Section -->
-    <span class="section-label">Inputs</span>
-    <div
-      v-for="nodeDef in inputNodes"
-      :key="nodeDef.type"
-      class="node-item"
-      draggable="true"
-      @dragstart="emit('drag-start', $event, nodeDef.type)"
-      @click="emit('node-click', nodeDef.type)"
-    >
-      <span class="node-icon">{{ getNodeIcon(nodeDef.type) }}</span>
-      <span class="node-text">{{ nodeDef.label }}</span>
-    </div>
+    <template v-else>
+      <!-- AI Section -->
+      <span class="section-label">AI</span>
+      <div
+        v-for="nodeDef in aiNodes"
+        :key="nodeDef.type"
+        class="node-item"
+        draggable="true"
+        @dragstart="emit('drag-start', $event, nodeDef.type)"
+        @click="emit('node-click', nodeDef.type)"
+      >
+        <span class="node-icon">{{ getNodeIcon(nodeDef.type) }}</span>
+        <span class="node-text">{{ nodeDef.label }}</span>
+      </div>
 
-    <!-- Separator -->
-    <div class="separator"></div>
+      <!-- Separator -->
+      <div class="separator"></div>
 
-    <!-- Helpers Section -->
-    <span class="section-label">Helpers</span>
-    <div
-      v-for="nodeDef in helperNodes"
-      :key="nodeDef.type"
-      class="node-item"
-      draggable="true"
-      @dragstart="emit('drag-start', $event, nodeDef.type)"
-      @click="emit('node-click', nodeDef.type)"
-    >
-      <span class="node-icon">{{ getNodeIcon(nodeDef.type) }}</span>
-      <span class="node-text">{{ nodeDef.label }}</span>
-    </div>
+      <!-- Inputs Section -->
+      <span class="section-label">Inputs</span>
+      <div
+        v-for="nodeDef in inputNodes"
+        :key="nodeDef.type"
+        class="node-item"
+        draggable="true"
+        @dragstart="emit('drag-start', $event, nodeDef.type)"
+        @click="emit('node-click', nodeDef.type)"
+      >
+        <span class="node-icon">{{ getNodeIcon(nodeDef.type) }}</span>
+        <span class="node-text">{{ nodeDef.label }}</span>
+      </div>
+
+      <!-- Separator -->
+      <div class="separator"></div>
+
+      <!-- Helpers Section -->
+      <span class="section-label">Helpers</span>
+      <div
+        v-for="nodeDef in helperNodes"
+        :key="nodeDef.type"
+        class="node-item"
+        draggable="true"
+        @dragstart="emit('drag-start', $event, nodeDef.type)"
+        @click="emit('node-click', nodeDef.type)"
+      >
+        <span class="node-icon">{{ getNodeIcon(nodeDef.type) }}</span>
+        <span class="node-text">{{ nodeDef.label }}</span>
+      </div>
+    </template>
   </aside>
 </template>
 
@@ -64,8 +83,16 @@ const props = defineProps({
   position: {
     type: Object,
     default: null
+  },
+  // When set, the menu switches to "connect mode" and only lists these options
+  connectionOptions: {
+    type: Array,
+    default: null
   }
 })
+
+// Connect mode is driven by a pending connection dropped on the empty canvas
+const isConnectMode = computed(() => props.connectionOptions !== null)
 
 // Computed style for positioned menu (double-click mode)
 const positionStyle = computed(() => {
@@ -79,7 +106,7 @@ const positionStyle = computed(() => {
   return null
 })
 
-const emit = defineEmits(['drag-start', 'node-click'])
+const emit = defineEmits(['drag-start', 'node-click', 'connect-option'])
 
 // Categorize nodes
 const aiNodes = computed(() =>
@@ -105,6 +132,15 @@ const helperNodes = computed(() =>
     n.type === NODE_TYPES.COMMENT
   )
 )
+
+/**
+ * Label for a connect option, disambiguating nodes with several compatible ports
+ * (e.g. Image Diff, whose two inputs are both "image")
+ */
+function getOptionLabel(option) {
+  if (option.portCount <= 1) return option.label
+  return `${option.label} · ${option.portType} ${option.portIndex + 1}`
+}
 
 function getNodeIcon(type) {
   const icons = {
@@ -155,6 +191,13 @@ function getNodeIcon(type) {
   margin-top: 4px;
 }
 
+.empty-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #666666;
+  padding: 8px 0;
+}
+
 .node-item {
   display: flex;
   align-items: center;
@@ -164,6 +207,11 @@ function getNodeIcon(type) {
   border-radius: 6px;
   cursor: grab;
   transition: all 0.15s ease;
+}
+
+/* In connect mode items are click-only, so no grab cursor */
+.node-item:not([draggable='true']) {
+  cursor: pointer;
 }
 
 .node-item:hover {
