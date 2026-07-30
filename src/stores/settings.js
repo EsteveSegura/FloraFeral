@@ -40,6 +40,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const showNodeHeaders = ref(persisted.showNodeHeaders ?? false)
   const skipSaveDialog = ref(persisted.skipSaveDialog ?? false)
 
+  // Beta Features (off by default)
+  const autoTidyBeta = ref(persisted.autoTidyBeta ?? false)
+
   // API Keys Settings
   const replicateApiKey = ref(persisted.replicateApiKey ?? '')
   const openaiApiKey = ref(persisted.openaiApiKey ?? '')
@@ -49,6 +52,7 @@ export const useSettingsStore = defineStore('settings', () => {
     () => ({
       showNodeHeaders: showNodeHeaders.value,
       skipSaveDialog: skipSaveDialog.value,
+      autoTidyBeta: autoTidyBeta.value,
       replicateApiKey: replicateApiKey.value,
       openaiApiKey: openaiApiKey.value
     }),
@@ -69,6 +73,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setSkipSaveDialog(value) {
     skipSaveDialog.value = value
+  }
+
+  function setAutoTidyBeta(value) {
+    autoTidyBeta.value = value
   }
 
   // API Keys Actions
@@ -106,6 +114,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // State
     showNodeHeaders,
     skipSaveDialog,
+    autoTidyBeta,
     replicateApiKey,
     openaiApiKey,
 
@@ -113,6 +122,7 @@ export const useSettingsStore = defineStore('settings', () => {
     toggleNodeHeaders,
     setNodeHeaders,
     setSkipSaveDialog,
+    setAutoTidyBeta,
     setReplicateApiKey,
     setOpenaiApiKey,
     getReplicateApiKey,

@@ -37,6 +37,24 @@
         </div>
       </div>
 
+      <!-- Beta Features Section -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">
+          Beta Features
+          <span class="settings-beta-badge">beta</span>
+        </h3>
+        <div class="settings-option">
+          <BaseCheckbox
+            id="auto-tidy-beta"
+            v-model="settingsStore.autoTidyBeta"
+            label="Auto-tidy layout"
+          />
+          <p class="settings-option-description">
+            Adds a Tidy button to auto-arrange nodes on the canvas. Experimental — layout may not be perfect for every workflow.
+          </p>
+        </div>
+      </div>
+
       <!-- API Keys Section -->
       <div class="settings-section">
         <h3 class="settings-section-title">API Keys</h3>
@@ -161,12 +179,28 @@ function handleClearKeys() {
 }
 
 .settings-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--flora-space-2);
   margin: 0;
   font-size: var(--flora-font-size-base);
   font-weight: var(--flora-font-weight-semibold);
   color: var(--flora-color-text-primary);
   padding-bottom: var(--flora-space-2);
   border-bottom: var(--flora-border-width-thin) solid var(--flora-color-border-default);
+}
+
+.settings-beta-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--flora-space-2);
+  font-size: var(--flora-font-size-xs);
+  font-weight: var(--flora-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--flora-color-accent-text);
+  background: var(--flora-color-accent-subtle);
+  border-radius: var(--flora-radius-sm);
 }
 
 .settings-option {

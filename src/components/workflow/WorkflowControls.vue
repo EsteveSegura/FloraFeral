@@ -10,6 +10,7 @@
         <span class="play-icon-collapsed">▶</span>
       </button>
       <button
+        v-if="settingsStore.autoTidyBeta"
         class="tidy-button-collapsed"
         @click="handleTidy"
         title="Auto-tidy layout"
@@ -37,6 +38,7 @@
 
       <!-- Tidy button -->
       <button
+        v-if="settingsStore.autoTidyBeta"
         class="tidy-btn"
         @click="handleTidy"
         :disabled="isExecuting"
@@ -94,6 +96,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 import { useWorkflowExecution } from '@/composables/useWorkflowExecution'
 import { useAutoLayout } from '@/composables/useAutoLayout'
+import { useSettingsStore } from '@/stores/settings'
 
 const {
   isExecuting,
@@ -111,6 +114,7 @@ const {
 
 const { fitView } = useVueFlow()
 const { autoLayoutNodes } = useAutoLayout()
+const settingsStore = useSettingsStore()
 
 const isExpanded = ref(false)
 
@@ -146,6 +150,7 @@ function handleStop() {
 }
 
 function handleTidy() {
+  if (!settingsStore.autoTidyBeta) return
   if (isExecuting.value) return
   autoLayoutNodes()
   requestAnimationFrame(() => fitView({ padding: 0.2 }))
