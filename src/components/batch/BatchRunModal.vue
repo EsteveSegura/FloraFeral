@@ -250,8 +250,17 @@
                     :src="run.outputs[node.id].value"
                     class="cell-thumb output-thumb"
                     alt="Output"
-                    @click="previewImage = run.outputs[node.id].value"
+                    @click="openPreview(run.outputs[node.id])"
                   />
+                  <video
+                    v-else-if="run.outputs[node.id].kind === BATCH_VALUE_KINDS.VIDEO"
+                    :src="run.outputs[node.id].value"
+                    class="cell-thumb output-thumb"
+                    muted
+                    playsinline
+                    preload="metadata"
+                    @click="openPreview(run.outputs[node.id])"
+                  ></video>
                   <div v-else class="output-text">
                     {{ run.outputs[node.id].value }}
                   </div>
@@ -286,15 +295,23 @@
 
   <!-- Output preview -->
   <BaseModal
-    v-if="previewImage"
+    v-if="preview"
     :model-value="true"
     :show-header="false"
     :show-footer="false"
     size="xl"
-    @update:model-value="previewImage = null"
+    @update:model-value="preview = null"
   >
     <div class="preview-modal">
-      <img :src="previewImage" alt="Output preview" />
+      <video
+        v-if="preview.kind === BATCH_VALUE_KINDS.VIDEO"
+        :src="preview.value"
+        controls
+        autoplay
+        loop
+        playsinline
+      ></video>
+      <img v-else :src="preview.value" alt="Output preview" />
     </div>
   </BaseModal>
 </template>
@@ -315,6 +332,7 @@ import {
   getBatchInputSpec,
   getBatchInputInitialValue,
   getMissingVariables,
+  isBinaryValueKind,
   reachesAnyNode,
   resolveUpstreamPromptNode
 } from '@/lib/batch-io'
@@ -344,7 +362,8 @@ const flowStore = useFlowStore()
 const batchStore = useBatchStore()
 
 const runCount = ref(3)
-const previewImage = ref(null)
+// Output cell opened in the large preview modal: { kind, value }
+const preview = ref(null)
 const csvInput = ref(null)
 const imagesInput = ref(null)
 const csvMessage = ref('')
@@ -365,6 +384,14 @@ const isOpen = computed({
 
 const inputNodes = computed(() => getBatchNodes(flowStore.nodes, BATCH_ROLES.INPUT))
 const outputNodes = computed(() => getBatchNodes(flowStore.nodes, BATCH_ROLES.OUTPUT))
+
+/**
+ * Open an output cell in the large preview modal
+ * @param {Object} output - Cell from run.outputs: { kind, value }
+ */
+function openPreview(output) {
+  preview.value = { kind: output.kind, value: output.value }
+}
 
 const inputSpecs = computed(() =>
   inputNodes.value.map(node => {
@@ -936,7 +963,7 @@ function handleDownloadZip() {
 
       const base = sanitizeFilename(output.label || nodeId)
 
-      if (output.kind === BATCH_VALUE_KINDS.IMAGE) {
+      if (isBinaryValueKind(output.kind)) {
         try {
           const { bytes, mimeType } = dataUrlToBytes(output.value)
           const filename = `${base}${extensionForMimeType(mimeType)}`
@@ -1256,11 +1283,13 @@ function handleDownloadZip() {
 }
 
 .cell-thumb {
+  display: block;
   width: 80px;
   height: 80px;
   object-fit: cover;
   border-radius: var(--flora-radius-sm);
   border: var(--flora-border-width-thin) solid var(--flora-color-border-default);
+  background: var(--flora-color-bg-tertiary);
 }
 
 .output-thumb {
@@ -1328,7 +1357,8 @@ function handleDownloadZip() {
   padding: var(--flora-space-4);
 }
 
-.preview-modal img {
+.preview-modal img,
+.preview-modal video {
   max-width: 100%;
   max-height: 80vh;
   object-fit: contain;

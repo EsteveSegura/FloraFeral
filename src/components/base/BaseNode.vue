@@ -25,10 +25,10 @@
       :position="Position.Left"
       :style="{
         top: `${getHandlePosition(index, inputs.length)}%`,
-        background: getPortColor(input)
+        background: getPortColor(getPortType(input))
       }"
     >
-      <span class="handle-label handle-label-left">{{ input }}</span>
+      <span class="handle-label handle-label-left">{{ getPortLabel(input) }}</span>
     </Handle>
 
     <!-- Output Handles -->
@@ -40,10 +40,10 @@
       :position="Position.Right"
       :style="{
         top: `${getHandlePosition(index, outputs.length)}%`,
-        background: getPortColor(output)
+        background: getPortColor(getPortType(output))
       }"
     >
-      <span class="handle-label handle-label-right">{{ output }}</span>
+      <span class="handle-label handle-label-right">{{ getPortLabel(output) }}</span>
     </Handle>
 
     <!-- Execution Status Badge -->
@@ -253,6 +253,27 @@ function getHandlePosition(index, total) {
 }
 
 /**
+ * Port type of an entry in `inputs`/`outputs`
+ * Ports are plain PORT_TYPES strings, or `{ type, label }` when a node has
+ * several ports of the same type and the handle labels need to tell them apart
+ * @param {string|Object} port
+ * @returns {string} PORT_TYPE
+ */
+function getPortType(port) {
+  return typeof port === 'string' ? port : port.type
+}
+
+/**
+ * Text shown next to a handle. Defaults to the port type
+ * @param {string|Object} port
+ * @returns {string}
+ */
+function getPortLabel(port) {
+  if (typeof port === 'string') return port
+  return port.label || port.type
+}
+
+/**
  * Get color for port type using Flora design tokens
  */
 function getPortColor(portType) {
@@ -260,7 +281,8 @@ function getPortColor(portType) {
     image: 'var(--flora-color-port-image)',
     prompt: 'var(--flora-color-port-prompt)',
     text: 'var(--flora-color-port-text)',
-    number: 'var(--flora-color-port-number)'
+    number: 'var(--flora-color-port-number)',
+    video: 'var(--flora-color-port-video)'
   }
   return colorMap[portType] || 'var(--flora-color-border-strong)'
 }

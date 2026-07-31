@@ -1008,6 +1008,7 @@ A node's role lives in `node.data.batchRole` (`'input' | 'output'`), set from th
 | `input` | `prompt-template` | `data.variables` |
 | `output` | `image-generator` | `data.lastOutputSrc` |
 | `output` | `text-generator` | `data.generatedText` |
+| `output` | `video-generator` | `data.lastOutputVideoSrc` |
 
 `BaseNode.vue` renders the IN/OUT badge from `data.batchRole`, so no individual node component needed changes.
 

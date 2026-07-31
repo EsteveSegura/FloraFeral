@@ -112,7 +112,8 @@ const emit = defineEmits(['drag-start', 'node-click', 'connect-option'])
 const aiNodes = computed(() =>
   props.nodes.filter(n =>
     n.type === NODE_TYPES.IMAGE_GENERATOR ||
-    n.type === NODE_TYPES.TEXT_GENERATOR
+    n.type === NODE_TYPES.TEXT_GENERATOR ||
+    n.type === NODE_TYPES.VIDEO_GENERATOR
   )
 )
 
@@ -141,6 +142,7 @@ function getNodeIcon(type) {
     [NODE_TYPES.DIFF]: '🔍',
     [NODE_TYPES.COMPARE]: '⚖️',
     [NODE_TYPES.TEXT_GENERATOR]: '💬',
+    [NODE_TYPES.VIDEO_GENERATOR]: '🎬',
     [NODE_TYPES.PROMPT_TEMPLATE]: '📋',
     [NODE_TYPES.DRAW]: '🖌️',
     [NODE_TYPES.COMMENT]: '🗒️'

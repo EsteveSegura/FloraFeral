@@ -101,10 +101,18 @@ export function extensionForMimeType(mimeType) {
     'image/jpg': '.jpg',
     'image/webp': '.webp',
     'image/gif': '.gif',
-    'image/svg+xml': '.svg'
+    'image/svg+xml': '.svg',
+    'video/mp4': '.mp4',
+    'video/webm': '.webm',
+    'video/quicktime': '.mov'
   }
 
-  return extensions[mimeType] || '.png'
+  if (extensions[mimeType]) {
+    return extensions[mimeType]
+  }
+
+  // An unmapped video must not end up named .png
+  return mimeType?.startsWith('video/') ? '.mp4' : '.png'
 }
 
 /**

@@ -13,6 +13,7 @@ import DrawNode from '@/components/nodes/DrawNode.vue'
 import DiffNode from '@/components/nodes/DiffNode.vue'
 import ImageCompareNode from '@/components/nodes/ImageCompareNode.vue'
 import TextGeneratorNode from '@/components/nodes/TextGeneratorNode.vue'
+import VideoGeneratorNode from '@/components/nodes/VideoGeneratorNode.vue'
 import GroupNode from '@/components/nodes/GroupNode.vue'
 import CommentNode from '@/components/nodes/CommentNode.vue'
 
@@ -129,6 +130,20 @@ export function registerAllNodes() {
     config: {
       category: 'Generator',
       color: '#E91E63'
+    }
+  })
+
+  // Register Video Generator Node
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.VIDEO_GENERATOR,
+    label: 'Video Generator',
+    description: 'Generate videos using AI from a prompt, a first frame and an optional last frame',
+    inputs: [PORT_TYPES.IMAGE, PORT_TYPES.IMAGE, PORT_TYPES.PROMPT],
+    outputs: [PORT_TYPES.VIDEO],
+    component: VideoGeneratorNode,
+    config: {
+      category: 'Generator',
+      color: '#EC4899'
     }
   })
 

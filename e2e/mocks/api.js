@@ -9,6 +9,10 @@ export const FAKE_GENERATED_IMAGE_2 =
 // Text generation responses
 export const TEXT_GENERATION_RESPONSE = 'a green hillside with rolling clouds under a bright blue sky'
 
+// Minimal MP4 data URL (not playable, enough to travel through the app as a src)
+export const FAKE_GENERATED_VIDEO =
+  'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDE='
+
 /**
  * Mock the GPT-5 text generation endpoint.
  * Optionally verify the request payload via `assertRequest`.
@@ -121,6 +125,30 @@ export async function mockGptImage1(page, { response = FAKE_GENERATED_IMAGE, ass
         id: 'img-pred-' + Date.now(),
         status: 'succeeded',
         output: [response],
+      }),
+    })
+  })
+}
+
+/**
+ * Mock the P-Video video generation endpoint.
+ * The real model returns a single URI, so `output` is a plain string here.
+ */
+export async function mockPVideo(page, { response = FAKE_GENERATED_VIDEO, assertRequest } = {}) {
+  await page.route('**/v1/models/prunaai/p-video/predictions', async (route) => {
+    const body = JSON.parse(route.request().postData())
+
+    if (assertRequest) {
+      assertRequest(body)
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'video-pred-' + Date.now(),
+        status: 'succeeded',
+        output: response,
       }),
     })
   })
