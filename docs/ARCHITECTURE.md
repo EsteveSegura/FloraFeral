@@ -40,7 +40,7 @@ flora/
 │   ├── composables/
 │   │   ├── useFlowIO.js              # Import/export operations
 │   │   ├── useViewportControls.js    # Lock/unlock and fit view
-│   │   ├── useCopyPaste.js           # Copy/paste node operations
+│   │   ├── useCopyPaste.js           # Copy/paste the selected nodes
 │   │   ├── useNodeCreation.js        # Node creation helpers
 │   │   ├── useDragAndDrop.js         # Drag & drop logic
 │   │   ├── useGroupManagement.js     # Group/ungroup operations
@@ -123,13 +123,13 @@ const { findNode, onConnect, addEdges, viewport, onNodeDragStop, fitView } = use
 // Logic composables
 const { fileInput, handleExport, handleImport, onFileSelected } = useFlowIO(flowStore, { addEdges })
 const { isLocked, handleLockToggle, handleFitView } = useViewportControls(fitView)
-const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition)
+const { copiedNodes, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition, { addEdges })
 const { createNodeAtPosition } = useNodeCreation(flowStore)
 
 // Complex composables
 const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
-useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowStore })
+useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore })
 ```
 
 **Features:**
@@ -138,7 +138,7 @@ useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowSto
 - Real-time connection validation
 - Flow export/import
 - Viewport controls (lock, fit view)
-- Copy/paste nodes (Ctrl+C, Ctrl+V)
+- Copy/paste the selection, keeping its layout and input connections (Ctrl+C, Ctrl+V)
 - Group nodes (Ctrl+G)
 - Settings modal
 - Automatic group management
@@ -323,17 +323,24 @@ export function useViewportControls(fitView) {
 }
 ```
 
-**useCopyPaste.js** - Copy/paste node operations
+**useCopyPaste.js** - Copy/paste the whole selection
 ```javascript
-export function useCopyPaste(flowStore, viewport, mousePosition) {
-  const copiedNode = ref(null)
+export function useCopyPaste(flowStore, viewport, mousePosition, { addEdges }) {
+  const copiedNodes = ref([])  // every selected node, group containers aside
+  const copiedEdges = ref([])  // the edges feeding them
 
   function handleCopy() { /* ... */ }
-  function handlePaste() { /* ... */ }
+  async function handlePaste() { /* ... */ }
 
-  return { copiedNode, handleCopy, handlePaste }
+  return { copiedNodes, handleCopy, handlePaste }
 }
 ```
+The paste anchors the bounding box of the snapshot at the mouse pointer, so the
+relative layout survives. Edges between copied nodes are rewired to the clones
+through an old-id → new-id map; input edges coming from outside the selection
+keep their original source. Outgoing edges are never cloned: targets merge every
+incoming edge, so a node the user did not copy would silently read two sources.
+Group containers are skipped and their children are pasted as top-level nodes.
 
 **useNodeCreation.js** - Node creation helpers
 ```javascript
@@ -372,7 +379,7 @@ export function useGroupManagement(flowStore, onNodeDragStop) {
 
 **useKeyboardShortcuts.js** - Global keyboard shortcuts
 ```javascript
-export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowStore }) {
+export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore }) {
   function handleKeyDown(event) { /* ... */ }
 
   onMounted(() => window.addEventListener('keydown', handleKeyDown))

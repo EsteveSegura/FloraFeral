@@ -191,7 +191,7 @@ function toggleNodesMenu() {
   }
 }
 const { isLocked, handleLockToggle, handleFitView } = useViewportControls(fitView)
-const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition, { addEdges })
+const { copiedNodes, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport, mousePosition, { addEdges })
 const { createNodeAtPosition } = useNodeCreation(flowStore)
 const {
   menuPosition,
@@ -252,7 +252,7 @@ function onRenameConfirm(label) {
 }
 
 // Setup keyboard shortcuts
-useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowStore })
+useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore })
 
 // Register connection handler - use addEdges directly
 onConnect((params) => {

@@ -153,7 +153,7 @@ src/
 ├── composables/                   # Reusable logic
 │   ├── useFlowIO.js              # Import/export operations
 │   ├── useViewportControls.js    # Lock/unlock and fit view
-│   ├── useCopyPaste.js           # Copy/paste nodes
+│   ├── useCopyPaste.js           # Copy/paste the selection
 │   ├── useNodeCreation.js        # Node creation helpers
 │   ├── useDragAndDrop.js         # Drag & drop logic
 │   ├── useGroupManagement.js     # Group/ungroup operations
