@@ -1,11 +1,12 @@
 /**
  * Composable for Keyboard Shortcuts
  * Handles global keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+G)
+ * Copy and paste act on the whole selection, see useCopyPaste
  */
 
 import { onMounted, onUnmounted } from 'vue'
 
-export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowStore }) {
+export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore }) {
   /**
    * Handle keyboard shortcuts
    */
@@ -19,21 +20,19 @@ export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, cop
     // Check for Ctrl+C or Cmd+C (Mac)
     if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
       if (!isEditableField) {
-        const selectedNode = flowStore.nodes.find(n => n.selected)
-        if (selectedNode) {
+        // With nothing selected let the native text copy through: handleCopy
+        // flushes the clipboard so a later Ctrl+V does not paste a stale copy
+        if (flowStore.nodes.some(n => n.selected)) {
           event.preventDefault()
-          handleCopy()
-        } else {
-          // No node selected - flush copied node so it doesn't interfere with text paste
-          copiedNode.value = null
         }
+        handleCopy()
       }
     }
 
     // Check for Ctrl+V or Cmd+V (Mac)
     if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
-      // Only paste node if not in editable field and we have a copied node
-      if (!isEditableField && copiedNode.value) {
+      // Only paste nodes if not in editable field and the clipboard has some
+      if (!isEditableField && copiedNodes.value.length > 0) {
         event.preventDefault()
         handlePaste()
       }
