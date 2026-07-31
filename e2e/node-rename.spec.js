@@ -88,6 +88,35 @@ test.describe('Node rename', () => {
     await expect(promptNode.locator('.node-label')).toHaveText('A')
   })
 
+  test('a long name is truncated instead of widening the node', async ({ page }) => {
+    await setupBlankCanvas(page, { showNodeHeaders: true })
+    await addNodeFromSidebar(page, 'Prompt')
+    await positionNodes(page, [{ type: 'prompt', x: 240, y: 200 }])
+
+    const promptNode = page.locator('.vue-flow__node-prompt')
+    const label = promptNode.locator('.node-label')
+    const widthBefore = (await promptNode.boundingBox()).width
+
+    const longName = 'A ridiculously long node name that must not stretch the node at all'
+    await renameNode(page, promptNode, longName)
+
+    // The node keeps its size and the title is ellipsized
+    expect((await promptNode.boundingBox()).width).toBe(widthBefore)
+    const { clientWidth, scrollWidth } = await label.evaluate(el => ({
+      clientWidth: el.clientWidth,
+      scrollWidth: el.scrollWidth,
+    }))
+    expect(scrollWidth).toBeGreaterThan(clientWidth)
+
+    // The full name is still reachable through the native tooltip
+    await expect(label).toHaveAttribute('title', longName)
+
+    // Editing it again does not widen the node either
+    await label.dblclick()
+    await expect(promptNode.locator('.node-label-input')).toBeVisible()
+    expect((await promptNode.boundingBox()).width).toBe(widthBefore)
+  })
+
   test('a repeated name gets a number', async ({ page }) => {
     await setupBlankCanvas(page, { showNodeHeaders: true })
     await addNodeFromSidebar(page, 'Prompt')

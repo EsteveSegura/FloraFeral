@@ -70,6 +70,7 @@
           ref="labelInput"
           v-model="labelDraft"
           class="node-label-input nodrag nopan"
+          size="1"
           @mousedown.stop
           @dblclick.stop
           @keydown="onLabelKeydown"
@@ -78,7 +79,7 @@
         <span
           v-else
           class="node-label"
-          title="Double-click to rename"
+          :title="nodeLabel"
           @dblclick.stop.prevent="startEditingLabel"
         >{{ nodeLabel }}</span>
       </slot>
@@ -302,10 +303,16 @@ function getPortColor(portType) {
   background: var(--flora-color-bg-secondary);
   border-bottom: var(--flora-border-width-thin) solid var(--flora-color-border-subtle);
   border-radius: var(--flora-radius-md) var(--flora-radius-md) 0 0;
+  /* The title must never widen the node: zero intrinsic width, stretched to
+     whatever the node content decides */
+  width: 0;
+  min-width: 100%;
+  overflow: hidden;
 }
 
 .node-icon {
   font-size: var(--flora-font-size-xl);
+  flex-shrink: 0;
 }
 
 .node-label {
@@ -315,13 +322,18 @@ function getPortColor(portType) {
   cursor: text;
   /* The double-click must not leave a word selected behind the input */
   user-select: none;
+  /* A long name is truncated; the native tooltip shows it in full */
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .node-label-input {
+  /* width:0 keeps the input from widening the header past the node */
   flex: 1;
+  width: 0;
   min-width: 0;
   font-family: inherit;
   font-weight: var(--flora-font-weight-semibold);
