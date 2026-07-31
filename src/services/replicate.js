@@ -7,6 +7,7 @@ import NANO_BANANA_PRO from './models/nano-banana-pro'
 import SEEDREAM_4 from './models/seedream-4'
 import LANG_SEGMENT_ANYTHING from './models/lang-segment-anything'
 import GPT_IMAGE_1 from './models/gpt-image-1'
+import GPT_IMAGE_2 from './models/gpt-image-2'
 import GPT_5 from './models/gpt-5'
 import GEMINI_2_5_FLASH from './models/gemini-2.5-flash'
 import { useSettingsStore } from '@/stores/settings'
@@ -19,6 +20,7 @@ const MODELS = {
   'seedream-4': SEEDREAM_4,
   'lang-segment-anything': LANG_SEGMENT_ANYTHING,
   'gpt-image-1': GPT_IMAGE_1,
+  'gpt-image-2': GPT_IMAGE_2,
   'gpt-5': GPT_5,
   'gemini-2.5-flash': GEMINI_2_5_FLASH,
   'default': NANO_BANANA_PRO
