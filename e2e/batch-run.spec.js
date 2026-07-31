@@ -5,6 +5,7 @@ import {
   addNodeFromSidebar,
   connectNodes,
   positionNodes,
+  renameNode,
   TEST_IMAGE_PATH,
 } from './helpers/canvas.js'
 
@@ -619,6 +620,76 @@ test.describe('Batch Run CSV', () => {
     await expect(rows.nth(1)).toContainText('Missing image: shot-b.png')
 
     expect(received).toHaveLength(1)
+  })
+
+  test('renamed nodes name the modal columns and the CSV headers', async ({ page }) => {
+    const received = []
+    await mockNanaBananaPro(page, { assertRequest: (b) => received.push(b.input.prompt) })
+
+    await setupBlankCanvas(page, { showNodeHeaders: true })
+    await addNodeFromSidebar(page, 'Prompt')
+    await addNodeFromSidebar(page, 'Prompt Template')
+    await addNodeFromSidebar(page, 'Image Generator')
+
+    const promptNode = page.locator('.vue-flow__node-prompt')
+    const templateNode = page.locator('.vue-flow__node-prompt-template')
+    const generatorNode = page.locator('.vue-flow__node-image-generator')
+
+    await positionNodes(page, [
+      { type: 'prompt', x: 20, y: 40 },
+      { type: 'prompt-template', x: 540, y: 40 },
+      { type: 'image-generator', x: 950, y: 40 },
+    ])
+
+    await promptNode.locator('textarea').fill('A {{ANIMAL}} here')
+    await promptNode.locator('textarea').blur()
+    await page.waitForTimeout(300)
+
+    await connectNodes(page, promptNode, 'output-0', templateNode, 'input-0')
+    await connectNodes(page, templateNode, 'output-0', generatorNode, 'input-1')
+    await expect(page.locator('.vue-flow__edge')).toHaveCount(2, { timeout: 5000 })
+
+    await renameNode(page, templateNode, 'Scene')
+    await renameNode(page, generatorNode, 'Render')
+
+    await markBatchRole(page, templateNode, 'Mark as batch input')
+    await markBatchRole(page, generatorNode, 'Mark as batch output')
+
+    await page.locator('button[title="Batch Run"]').click()
+    const modal = page.locator('.batch-content')
+
+    // The table header and the legend are built from the node names
+    await expect(modal.locator('th.col-input')).toHaveText('Scene · ANIMAL')
+    await expect(modal.locator('th.col-output')).toHaveText('Render')
+    await expect(modal.locator('.batch-legend')).toContainText('Inputs: Scene')
+    await expect(modal.locator('.batch-legend')).toContainText('Outputs: Render')
+
+    await modal.locator('#run-count').fill('2')
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      modal.getByRole('button', { name: 'Download CSV' }).click(),
+    ])
+    const csvText = await (await import('fs/promises')).readFile(await download.path(), 'utf8')
+    expect(csvText).toContain('Scene · ANIMAL')
+    expect(csvText).not.toContain('New Prompt Template')
+
+    // The renamed header still maps back on import
+    const header = csvText.split(/\r?\n/)[0]
+    await modal.locator('input[type="file"][accept*="csv"]').setInputFiles({
+      name: 'filled.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from([header, '1,fox', '2,bear'].join('\r\n'), 'utf8'),
+    })
+
+    const rows = modal.locator('.batch-table tbody tr')
+    await expect(rows).toHaveCount(2)
+    await expect(modal.locator('.csv-message')).toContainText('Imported 2 rows')
+
+    await modal.getByRole('button', { name: 'Run batch' }).click()
+    await expect(rows.nth(1).locator('.status-done')).toBeVisible({ timeout: 60000 })
+
+    expect(received).toEqual(['A fox here', 'A bear here'])
   })
 })
 

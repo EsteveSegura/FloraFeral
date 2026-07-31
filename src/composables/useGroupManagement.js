@@ -6,6 +6,7 @@
 
 import { nextTick } from 'vue'
 import { createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
+import { ensureUniqueLabel } from '@/lib/node-label'
 
 export function useGroupManagement(flowStore, onNodeDragStop) {
   /**
@@ -143,7 +144,7 @@ export function useGroupManagement(flowStore, onNodeDragStop) {
       parentId,
       NODE_TYPES.GROUP,
       { x: minX, y: minY },
-      { label: 'Group' },
+      { label: ensureUniqueLabel('Group', flowStore.nodes) },
       ioConfig
     )
 

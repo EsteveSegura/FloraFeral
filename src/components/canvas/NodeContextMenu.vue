@@ -1,6 +1,12 @@
 <template>
   <aside class="node-context-menu" :style="positionStyle">
     <h3 class="header">{{ nodeLabel }}</h3>
+
+    <div class="menu-item" @click="emit('rename')">
+      <span class="menu-icon">✏️</span>
+      <span class="menu-text">Rename</span>
+    </div>
+
     <span class="section-label">Batch Run</span>
 
     <template v-if="supportsBatch">
@@ -56,7 +62,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['set-role'])
+const emit = defineEmits(['set-role', 'rename'])
 
 const positionStyle = computed(() => ({
   left: `${props.position.x}px`,

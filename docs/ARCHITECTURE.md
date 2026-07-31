@@ -164,10 +164,11 @@ useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowSto
 - `id` - Unique node ID
 - `type` - Node type
 - `data` - Node data
-- `label` - Node title
+- `label` - Fallback node title (the real one is read from `data.label`, see below)
 - `inputs` - Array of input types
 - `outputs` - Array of output types
 - `icon` - Emoji for header
+- `hideHeader` - Never show the header, even when the setting is on (used by `CommentNode`, whose content is already its text)
 - `loading` - Loading state
 - `error` - Error message
 - `selected` - If selected
@@ -178,6 +179,15 @@ useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNode, flowSto
 - Optional action button (`@action:run`)
 - Consistent styles for all nodes
 - Optional header display controlled by settings store
+- **Renamable title:** double-clicking the header title turns it into an input (Enter confirms, Escape reverts, an empty name keeps the previous one). BaseNode owns the write — `updateNodeData(id, { label })` after `ensureUniqueLabel()` — so no node component duplicates it. Renaming with the header hidden goes through the right-click menu instead (`RenameNodeDialog`).
+
+**The title comes from `data.label`, not from the `label` prop:**
+```javascript
+// VueFlow passes a top-level `label` down to every node component. Being
+// undeclared there, that undefined value falls through $attrs into BaseNode and
+// overrides the `:label="nodeData.label"` the node binds explicitly
+const nodeLabel = computed(() => props.data?.label || props.label)
+```
 
 **Settings integration:**
 ```javascript
@@ -975,7 +985,7 @@ Each row also has its own **Run / Retry** button, which executes only that row t
 
 The input table can be downloaded as CSV, filled in elsewhere (Excel, Sheets, a script) and imported back. The imported row count wins, so handing back 8 rows for a 4-row template is fine.
 
-- **Headers are the human-readable column labels** (`Prompt Template · ANIMAL`). Import matches by exact header; a header that matches nothing is reported as ignored rather than silently landing in the wrong column. A header for a variable the canvas does not declare yet is resolved through its `<node label> · <VARIABLE>` prefix, since a row's own template may introduce it.
+- **Headers are the human-readable column labels** (`Prompt Template · ANIMAL`), i.e. the node names the user can edit from the header. Import matches by exact header; a header that matches nothing is reported as ignored rather than silently landing in the wrong column. A header for a variable the canvas does not declare yet is resolved through its `<node label> · <VARIABLE>` prefix, since a row's own template may introduce it. This is why node names are kept unique (`src/lib/node-label.js`): two homonymous inputs would collapse into a single column on import, and the first one would silently never receive its values.
 - **Quoting is handled properly** — prompts routinely contain commas, quotes and newlines. Export writes a UTF-8 BOM so Excel does not mangle accents, and import sniffs the delimiter (`,`, `;`, tab) because localized Excel writes `;`.
 - **Images travel as filenames.** An image cell holds `{ name, src }`: the CSV carries only `name`, and the bytes arrive when the user drops the files on the panel's upload zone, where they are matched to every cell referencing that filename. A file used by several rows is applied to all of them.
 - **A row missing its image is skipped, not blocking.** `Run batch` generates the complete rows and marks the rest `Missing image: <file>`; their per-row Run button stays disabled until the file is uploaded.

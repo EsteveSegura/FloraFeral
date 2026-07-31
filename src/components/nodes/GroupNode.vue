@@ -18,8 +18,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useVueFlow } from '@vue-flow/core'
 import { NodeResizer } from '@vue-flow/node-resizer'
 import '@vue-flow/node-resizer/dist/style.css'
+import { ensureUniqueLabel } from '@/lib/node-label'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -28,11 +30,13 @@ const props = defineProps({
   selected: { type: Boolean, default: false }
 })
 
+const { updateNodeData, getNodes } = useVueFlow()
+
 const labelDiv = ref(null)
 
 function updateLabel(event) {
-  const newLabel = event.target.textContent.trim()
-  props.data.label = newLabel || 'Group'
+  const newLabel = event.target.textContent.trim() || 'Group'
+  updateNodeData(props.id, { label: ensureUniqueLabel(newLabel, getNodes.value, props.id) })
 }
 
 function blurOnEnter(event) {

@@ -6,6 +6,7 @@
  */
 
 import { createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
+import { ensureUniqueLabel } from '@/lib/node-label'
 import { loadFlowFromFile } from '@/lib/flow-io'
 
 export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, vueFlowHelpers = {}, onMenuClose = null) {
@@ -68,7 +69,7 @@ export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, 
         NODE_TYPES.IMAGE,
         position,
         {
-          label: 'Image',
+          label: ensureUniqueLabel('Image', flowStore.nodes),
           src: event.target.result,
           name: file.name
         },

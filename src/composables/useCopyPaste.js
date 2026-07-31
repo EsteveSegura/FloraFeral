@@ -5,6 +5,7 @@
 
 import { ref, nextTick } from 'vue'
 import { createNode, getNodeIOConfig } from '@/lib/node-shapes'
+import { ensureUniqueLabel } from '@/lib/node-label'
 
 export function useCopyPaste(flowStore, viewport, mousePosition, { addEdges }) {
   const copiedNode = ref(null)
@@ -49,9 +50,10 @@ export function useCopyPaste(flowStore, viewport, mousePosition, { addEdges }) {
     // Use already cloned data from handleCopy
     const clonedData = JSON.parse(JSON.stringify(copiedNode.value.data))
 
-    // Update label to indicate it's a copy
+    // The copy cannot reuse the original name: it would collapse both nodes into
+    // a single batch column
     if (clonedData.label) {
-      clonedData.label = `${clonedData.label}`
+      clonedData.label = ensureUniqueLabel(clonedData.label, flowStore.nodes)
     }
 
     // Create new node with same type and data
