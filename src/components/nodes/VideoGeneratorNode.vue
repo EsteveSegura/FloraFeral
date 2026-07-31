@@ -1,7 +1,7 @@
 <template>
   <div>
-    <!-- Node Toolbar -->
-    <NodeToolbar :is-visible="selected" :position="Position.Top" :offset="10">
+    <!-- Node Toolbar: hides itself unless this node is the only one selected -->
+    <NodeToolbar :position="Position.Top" :offset="10">
       <div class="node-toolbar-content">
         <!-- Model Selector -->
         <div class="toolbar-control">
