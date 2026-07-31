@@ -49,6 +49,10 @@ function shouldExecuteNode(node) {
       // Execute if no generated text
       return !node.data?.generatedText
 
+    case NODE_TYPES.VIDEO_GENERATOR:
+      // Execute if no generated video
+      return !node.data?.lastOutputVideoSrc
+
     case NODE_TYPES.PROMPT:
       // Prompt nodes are "complete" if they have prompt text
       // They don't need execution - they're input nodes
@@ -335,7 +339,9 @@ class WorkflowExecutor {
 
         // If forceRerun is enabled, execute all generator nodes regardless of current state
         if (this.options.forceRerun) {
-          const isGeneratorNode = node.type === NODE_TYPES.IMAGE_GENERATOR || node.type === NODE_TYPES.TEXT_GENERATOR
+          const isGeneratorNode = node.type === NODE_TYPES.IMAGE_GENERATOR ||
+            node.type === NODE_TYPES.TEXT_GENERATOR ||
+            node.type === NODE_TYPES.VIDEO_GENERATOR
           if (isGeneratorNode) {
             console.log(`[WorkflowExecutor] Force re-running node ${node.id}`)
             return true

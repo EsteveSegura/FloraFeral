@@ -10,6 +10,7 @@ export const NODE_TYPES = {
   DIFF: 'diff',
   COMPARE: 'compare',
   TEXT_GENERATOR: 'text-generator',
+  VIDEO_GENERATOR: 'video-generator',
   GROUP: 'group',
   COMMENT: 'comment'
 }
@@ -19,7 +20,8 @@ export const NODE_TYPES = {
  */
 export const PORT_TYPES = {
   IMAGE: 'image',
-  PROMPT: 'prompt'
+  PROMPT: 'prompt',
+  VIDEO: 'video'
 }
 
 /**
@@ -111,6 +113,11 @@ const NODE_IO_CONFIG = {
   [NODE_TYPES.TEXT_GENERATOR]: {
     inputs: [PORT_TYPES.IMAGE, PORT_TYPES.PROMPT],
     outputs: [PORT_TYPES.PROMPT]
+  },
+  // Two image inputs: the last frame reference and the first frame (image)
+  [NODE_TYPES.VIDEO_GENERATOR]: {
+    inputs: [PORT_TYPES.IMAGE, PORT_TYPES.IMAGE, PORT_TYPES.PROMPT],
+    outputs: [PORT_TYPES.VIDEO]
   },
   [NODE_TYPES.GROUP]: {
     inputs: [],

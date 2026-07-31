@@ -10,6 +10,7 @@ import GPT_IMAGE_1 from './models/gpt-image-1'
 import GPT_IMAGE_2 from './models/gpt-image-2'
 import GPT_5 from './models/gpt-5'
 import GEMINI_2_5_FLASH from './models/gemini-2.5-flash'
+import P_VIDEO from './models/p-video'
 import { useSettingsStore } from '@/stores/settings'
 
 /**
@@ -23,6 +24,7 @@ const MODELS = {
   'gpt-image-2': GPT_IMAGE_2,
   'gpt-5': GPT_5,
   'gemini-2.5-flash': GEMINI_2_5_FLASH,
+  'p-video': P_VIDEO,
   'default': NANO_BANANA_PRO
 }
 
@@ -282,6 +284,82 @@ class ReplicateService {
   }
 
   /**
+   * Generate video using Replicate API
+   * @param {Object} options
+   * @param {string} options.prompt - Text description
+   * @param {string} [options.imageSrc] - First frame image
+   * @param {string} [options.lastFrameImage] - Last frame reference image
+   * @param {string} [options.model] - Model ID to use (default: p-video)
+   * @param {Object} [options.params] - Additional parameters
+   * @returns {Promise<Object>} Generated video result
+   */
+  async generateVideo(options) {
+    const {
+      prompt,
+      imageSrc = null,
+      lastFrameImage = null,
+      model: modelId = 'p-video',
+      params = {}
+    } = options
+
+    // Validate inputs
+    if (!prompt) {
+      throw new Error('Prompt is required')
+    }
+
+    // Get model configuration
+    const model = this.getModel(modelId)
+
+    // Prepare image input
+    let imageInput = []
+    if (imageSrc) {
+      imageInput = Array.isArray(imageSrc) ? imageSrc : [imageSrc]
+    }
+
+    console.log('Replicate service - preparing video generation:')
+    console.log('  Prompt:', prompt.substring(0, 50) + '...')
+    console.log('  First frame image:', imageInput.length > 0 ? 'yes' : 'no')
+    console.log('  Last frame image:', lastFrameImage ? 'yes' : 'no')
+
+    // Validate and build input
+    const validatedParams = model.validateParams(params)
+    const input = model.buildInput({
+      prompt,
+      imageInput,
+      lastFrameImage,
+      params: validatedParams
+    })
+
+    console.log('  API input payload:', {
+      prompt: input.prompt?.substring(0, 50) + '...',
+      has_image: !!input.image,
+      has_last_frame_image: !!input.last_frame_image,
+      duration: input.duration,
+      resolution: input.resolution,
+      fps: input.fps,
+      draft: input.draft,
+      ...(input.aspect_ratio && { aspect_ratio: input.aspect_ratio })
+    })
+
+    // Check for API token. Unlike images there is no mock video to fall back to
+    const token = this.getApiToken()
+    if (!token) {
+      throw new Error('No Replicate API token found. Please configure it in Settings.')
+    }
+
+    // Build complete endpoint URL
+    const endpoint = this.config.apiUrl + model.endpointPath
+
+    // Make API call
+    try {
+      const response = await this._callApi(endpoint, input, token, model)
+      return model.parseResponse(response)
+    } catch (error) {
+      throw this._handleError(error)
+    }
+  }
+
+  /**
    * Transform Replicate API URL to use local proxy
    * @param {string} url - Original Replicate API URL
    * @returns {string} Transformed URL for local proxy
@@ -447,7 +525,7 @@ class ReplicateService {
    */
   _handleError(error) {
     if (error.message.includes('timeout')) {
-      return new Error('Image generation timed out. Please try again.')
+      return new Error('Generation timed out. Please try again.')
     }
 
     if (error.message.includes('401') || error.message.includes('403')) {

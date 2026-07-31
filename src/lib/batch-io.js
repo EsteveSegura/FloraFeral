@@ -31,7 +31,8 @@ const BATCH_INPUT_TYPES = [
  */
 const BATCH_OUTPUT_TYPES = [
   NODE_TYPES.IMAGE_GENERATOR,
-  NODE_TYPES.TEXT_GENERATOR
+  NODE_TYPES.TEXT_GENERATOR,
+  NODE_TYPES.VIDEO_GENERATOR
 ]
 
 /**
@@ -40,7 +41,21 @@ const BATCH_OUTPUT_TYPES = [
 export const BATCH_VALUE_KINDS = {
   TEXT: 'text',
   IMAGE: 'image',
+  VIDEO: 'video',
   VARIABLES: 'variables'
+}
+
+/**
+ * Kinds whose value is a data URL, packaged as a binary file on export
+ */
+const BINARY_VALUE_KINDS = [BATCH_VALUE_KINDS.IMAGE, BATCH_VALUE_KINDS.VIDEO]
+
+/**
+ * @param {string} kind - BATCH_VALUE_KINDS value
+ * @returns {boolean}
+ */
+export function isBinaryValueKind(kind) {
+  return BINARY_VALUE_KINDS.includes(kind)
 }
 
 /**
@@ -253,6 +268,10 @@ export function buildBatchOutputResetPatch(node) {
     return { generatedText: null, prompt: '', error: null }
   }
 
+  if (node.type === NODE_TYPES.VIDEO_GENERATOR) {
+    return { lastOutputVideoSrc: null, error: null }
+  }
+
   return { lastOutputSrc: null, error: null }
 }
 
@@ -266,6 +285,14 @@ export function readBatchOutput(node) {
     return {
       kind: BATCH_VALUE_KINDS.TEXT,
       value: node.data?.generatedText || null,
+      error: node.data?.error || null
+    }
+  }
+
+  if (node.type === NODE_TYPES.VIDEO_GENERATOR) {
+    return {
+      kind: BATCH_VALUE_KINDS.VIDEO,
+      value: node.data?.lastOutputVideoSrc || null,
       error: node.data?.error || null
     }
   }

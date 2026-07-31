@@ -44,6 +44,13 @@ export function useNodeCreation(flowStore) {
       data.params = replicateService.getModelDefaults('gpt-5')
     }
 
+    // Add prompt field and model params for video generator nodes
+    if (nodeType === NODE_TYPES.VIDEO_GENERATOR) {
+      data.prompt = ''
+      data.model = 'p-video'
+      data.params = replicateService.getModelDefaults('p-video')
+    }
+
     // Add prompt field for prompt nodes
     if (nodeType === NODE_TYPES.PROMPT) {
       data.prompt = ''
