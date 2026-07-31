@@ -17,6 +17,9 @@ export function useContextMenu(isNodesMenuOpen) {
   const menuPosition = ref(null)
   const nodeMenuPosition = ref(null)
   const contextNode = ref(null)
+  // Screen coordinates where the menu was invoked, so nodes picked from it
+  // spawn under the cursor instead of at the center of the canvas
+  const menuOrigin = ref(null)
 
   /**
    * Calculate position that keeps menu within window boundaries
@@ -55,6 +58,7 @@ export function useContextMenu(isNodesMenuOpen) {
     const posY = clientY - rect.top
 
     menuPosition.value = calculateBoundedPosition(posX, posY, rect)
+    menuOrigin.value = { x: clientX, y: clientY }
     closeNodeMenu()
     isNodesMenuOpen.value = true
   }
@@ -86,6 +90,7 @@ export function useContextMenu(isNodesMenuOpen) {
     // Only one menu at a time
     isNodesMenuOpen.value = false
     menuPosition.value = null
+    menuOrigin.value = null
   }
 
   /**
@@ -93,6 +98,7 @@ export function useContextMenu(isNodesMenuOpen) {
    */
   function resetMenuPosition() {
     menuPosition.value = null
+    menuOrigin.value = null
   }
 
   /**
@@ -109,11 +115,13 @@ export function useContextMenu(isNodesMenuOpen) {
   function closeMenu() {
     isNodesMenuOpen.value = false
     menuPosition.value = null
+    menuOrigin.value = null
     closeNodeMenu()
   }
 
   return {
     menuPosition,
+    menuOrigin,
     nodeMenuPosition,
     contextNode,
     openNodesMenuAt,

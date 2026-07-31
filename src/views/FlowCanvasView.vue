@@ -195,6 +195,7 @@ const { copiedNode, handleCopy, handlePaste } = useCopyPaste(flowStore, viewport
 const { createNodeAtPosition } = useNodeCreation(flowStore)
 const {
   menuPosition,
+  menuOrigin,
   nodeMenuPosition,
   contextNode,
   openNodesMenuAt,
@@ -214,7 +215,7 @@ const {
   createNodeFromConnection,
   cancelPendingConnection
 } = useConnectionDrop(flowStore, createNodeAtPosition, screenToFlowCoordinate, { addEdges }, openNodesMenuAt, closeMenu)
-const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, closeNodesMenu)
+const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, closeNodesMenu, menuOrigin)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
 
 // Register right-click handlers for context menus
