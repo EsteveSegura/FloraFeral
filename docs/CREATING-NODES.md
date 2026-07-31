@@ -161,8 +161,8 @@ For nodes with dynamic configuration:
 ```vue
 <template>
   <div>
-    <!-- Node Toolbar -->
-    <NodeToolbar :is-visible="selected" :position="Position.Top" :offset="10">
+    <!-- Node Toolbar: hides itself unless this node is the only one selected -->
+    <NodeToolbar :position="Position.Top" :offset="10">
       <div class="node-toolbar-content">
         <div class="toolbar-control">
           <label>Option:</label>
@@ -191,6 +191,10 @@ function onOptionChange(event) {
 }
 </script>
 ```
+
+Leave `is-visible` unset: without it `NodeToolbar` shows only when its node is the
+single selected node, so multi-selections do not pile up overlapping toolbars.
+Passing `:is-visible="selected"` would bring them all back.
 
 ---
 
