@@ -9,9 +9,26 @@ import { createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
 import { ensureUniqueLabel } from '@/lib/node-label'
 import { loadFlowFromFile } from '@/lib/flow-io'
 
-export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, vueFlowHelpers = {}, onMenuClose = null) {
+// Rough node size, used to drop the new node centered on the pointer
+const NODE_HALF_WIDTH = 75
+const NODE_HALF_HEIGHT = 50
+
+export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, vueFlowHelpers = {}, onMenuClose = null, menuOrigin = null) {
   let draggedNodeType = null
   let isDragging = false
+
+  /**
+   * Convert screen coordinates into canvas coordinates, centering the node there
+   * @param {number} clientX - Screen X coordinate
+   * @param {number} clientY - Screen Y coordinate
+   * @param {DOMRect} rect - Canvas wrapper bounds
+   */
+  function toCenteredCanvasPosition(clientX, clientY, rect) {
+    return {
+      x: (clientX - rect.left - viewport.value.x) / viewport.value.zoom - NODE_HALF_WIDTH,
+      y: (clientY - rect.top - viewport.value.y) / viewport.value.zoom - NODE_HALF_HEIGHT
+    }
+  }
 
   /**
    * Handle drag start from sidebar
@@ -23,7 +40,8 @@ export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, 
   }
 
   /**
-   * Create node at viewport center when clicking (not dragging)
+   * Create node when clicking (not dragging): at the point where the context menu
+   * was opened, or at the viewport center when the menu was opened as a sidebar
    */
   function onNodeItemClick(nodeType) {
     // Small delay to check if drag started
@@ -39,16 +57,13 @@ export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, 
 
       const rect = canvasWrapper.getBoundingClientRect()
 
-      // Calculate center of viewport in canvas coordinates
-      const centerX = rect.width / 2
-      const centerY = rect.height / 2
+      // Right-click opens the menu at the pointer, so spawn the node there.
+      // Without an origin (sidebar mode) fall back to the center of the viewport
+      const origin = menuOrigin?.value ?? null
+      const spawnX = origin ? origin.x : rect.left + rect.width / 2
+      const spawnY = origin ? origin.y : rect.top + rect.height / 2
 
-      const position = {
-        x: (centerX - viewport.value.x) / viewport.value.zoom - 75, // Center node (width ~150px)
-        y: (centerY - viewport.value.y) / viewport.value.zoom - 50   // Center node (height ~100px)
-      }
-
-      createNodeAtPosition(nodeType, position)
+      createNodeAtPosition(nodeType, toCenteredCanvasPosition(spawnX, spawnY, rect))
       isNodesMenuOpen.value = false
       if (onMenuClose) onMenuClose()
     }, 100)
@@ -119,10 +134,7 @@ export function useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, 
     const rect = canvasWrapper.getBoundingClientRect()
 
     // Calculate position relative to canvas, accounting for zoom and pan
-    const position = {
-      x: (event.clientX - rect.left - viewport.value.x) / viewport.value.zoom - 75, // Center node (width ~150px)
-      y: (event.clientY - rect.top - viewport.value.y) / viewport.value.zoom - 50   // Center node (height ~100px)
-    }
+    const position = toCenteredCanvasPosition(event.clientX, event.clientY, rect)
 
     // Check if dropping a file
     const files = event.dataTransfer.files
