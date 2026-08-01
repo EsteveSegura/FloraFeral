@@ -40,14 +40,6 @@ export const GPT_5 = {
         type: 'select',
         enum: ['low', 'medium', 'high'],
         default: 'medium'
-      },
-      {
-        key: 'max_completion_tokens',
-        label: 'Max Tokens',
-        type: 'number',
-        min: 1,
-        max: 100000,
-        default: null
       }
     ],
 
@@ -55,6 +47,16 @@ export const GPT_5 = {
      * Secondary options, rendered in the node options side panel
      */
     advancedControls: [
+      {
+        key: 'max_completion_tokens',
+        label: 'Max tokens',
+        type: 'number',
+        min: 1,
+        max: 100000,
+        default: null,
+        placeholder: 'Model default',
+        description: 'A high reasoning effort may need a higher cap, or the answer comes back empty'
+      },
       {
         key: 'system_prompt',
         label: 'System prompt',

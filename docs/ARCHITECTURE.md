@@ -435,7 +435,8 @@ stops scaling past a handful of controls, so every model splits its `uiSchema` i
 `controls` for the toolbar and `advancedControls` for the panel. Both are the same
 descriptor shape and both write to `data.params`, so nothing about serialization or the
 API payload changes. The ⋮ button only appears when the current model declares advanced
-controls.
+controls. What is deliberately *not* there is anything that asks for more than one image:
+see [One image per generation](#one-image-per-generation).
 
 The panel reads its node through VueFlow's `findNode`, not through the store: `selected`
 is only kept up to date on VueFlow's own node objects, and the panel lives and dies by it.
@@ -694,7 +695,25 @@ const result = await replicateService.generateImage({
 Each model defines:
 - Accepted parameters
 - Default values
-- UI Schema for toolbar (dynamic controls)
+- UI Schema, split into `controls` for the node toolbar and `advancedControls` for the
+  node options side panel
+
+### One image per generation
+
+Several models can return a batch of images in a single prediction: `number_of_images` on
+the gpt-image models, `max_images` together with `sequential_image_generation` on
+seedream-4. **None of them is exposed in the UI, and `buildInput` always asks for exactly
+one image**, ignoring whatever a flow's `data.params` might carry.
+
+An Image Generator node renders a single output and reads `imageUrl`, the first entry of
+the response. Every extra image was billed and then dropped on the floor, which is a
+silent cost for something the user could not see. Fixing the value at 1 in `defaults`, and
+reading it from there rather than from `params`, is what keeps an imported JSON from
+re-enabling it behind the user's back.
+
+Should the canvas ever grow a node that can hold several images, the way back is to expose
+the parameter again and consume `imageUrls` / `allOutputs`, which the model configs already
+return from `parseResponse`.
 
 ---
 

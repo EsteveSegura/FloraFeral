@@ -13,6 +13,10 @@ export const SEEDREAM_4 = {
 
   /**
    * Default parameters for the model
+   *
+   * `max_images` is fixed at 1 and `sequential_image_generation` at 'disabled',
+   * neither exposed in the UI: an Image Generator node renders a single output,
+   * so any extra image would be billed and then dropped on the floor
    */
   defaults: {
     size: '2K',
@@ -49,12 +53,6 @@ export const SEEDREAM_4 = {
           '3:2', '2:3', '21:9'
         ],
         default: 'match_input_image'
-      },
-      {
-        key: 'enhance_prompt',
-        label: 'Enhance Prompt',
-        type: 'checkbox',
-        default: true
       }
     ],
 
@@ -62,6 +60,13 @@ export const SEEDREAM_4 = {
      * Secondary options, rendered in the node options side panel
      */
     advancedControls: [
+      {
+        key: 'enhance_prompt',
+        label: 'Enhance prompt',
+        type: 'checkbox',
+        default: true,
+        description: 'Higher quality results, at the cost of a slower generation'
+      },
       {
         key: 'width',
         label: 'Custom width',
@@ -79,23 +84,6 @@ export const SEEDREAM_4 = {
         max: 4096,
         default: 2048,
         description: 'Only used when Size is set to custom'
-      },
-      {
-        key: 'sequential_image_generation',
-        label: 'Sequential generation',
-        type: 'select',
-        enum: ['disabled', 'auto'],
-        default: 'disabled',
-        description: 'With auto, the model decides whether to return a set of related images'
-      },
-      {
-        key: 'max_images',
-        label: 'Max images',
-        type: 'number',
-        min: 1,
-        max: 15,
-        default: 1,
-        description: 'Cap for sequential generation. Input plus generated images cannot exceed 15'
       }
     ]
   },
@@ -109,8 +97,7 @@ export const SEEDREAM_4 = {
       'match_input_image',
       '1:1', '4:3', '3:4', '16:9', '9:16',
       '3:2', '2:3', '21:9'
-    ],
-    sequential_image_generation: ['disabled', 'auto']
+    ]
   },
 
   /**
@@ -138,8 +125,9 @@ export const SEEDREAM_4 = {
       size: params.size || this.defaults.size,
       aspect_ratio: params.aspect_ratio || this.defaults.aspect_ratio,
       enhance_prompt: params.enhance_prompt !== undefined ? params.enhance_prompt : this.defaults.enhance_prompt,
-      max_images: params.max_images || this.defaults.max_images,
-      sequential_image_generation: params.sequential_image_generation || this.defaults.sequential_image_generation
+      // Always a single image, see `defaults`
+      max_images: this.defaults.max_images,
+      sequential_image_generation: this.defaults.sequential_image_generation
     }
 
     // Add width and height only if size is 'custom'
@@ -167,10 +155,6 @@ export const SEEDREAM_4 = {
       throw new Error(`Invalid aspect_ratio. Must be one of: ${this.validValues.aspect_ratio.join(', ')}`)
     }
 
-    if (params.sequential_image_generation && !this.validValues.sequential_image_generation.includes(params.sequential_image_generation)) {
-      throw new Error(`Invalid sequential_image_generation. Must be one of: ${this.validValues.sequential_image_generation.join(', ')}`)
-    }
-
     if (params.width !== undefined) {
       const width = parseInt(params.width)
       if (isNaN(width) || width < 1024 || width > 4096) {
@@ -187,22 +171,14 @@ export const SEEDREAM_4 = {
       validated.height = height
     }
 
-    if (params.max_images !== undefined) {
-      const maxImages = parseInt(params.max_images)
-      if (isNaN(maxImages) || maxImages < 1 || maxImages > 15) {
-        throw new Error('max_images must be between 1 and 15')
-      }
-      validated.max_images = maxImages
-    }
-
     return {
       size: params.size,
       aspect_ratio: params.aspect_ratio,
       enhance_prompt: params.enhance_prompt,
       width: validated.width,
       height: validated.height,
-      max_images: validated.max_images,
-      sequential_image_generation: params.sequential_image_generation
+      // max_images and sequential_image_generation are deliberately dropped:
+      // buildInput always asks for a single image
     }
   },
 
