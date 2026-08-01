@@ -155,38 +155,67 @@ test.describe('Auto layout ordering', () => {
 })
 
 /**
- * Two prompt nodes wrapped in a group, plus a free Image feeding the first one.
+ * A Prompt and a Text Generator wrapped in a group, fed by a free Image sitting
+ * far to the right, so the layout has to pull the whole group across.
  * Grouping needs the headers visible: they are the only spot on a node that does
  * not focus a textarea.
  */
-async function setupGroupedFlow(page) {
-  await setupBlankCanvas(page, { showNodeHeaders: true })
+async function setupGroupedFlow(page, { autoLayoutGroupContents = false } = {}) {
+  await setupBlankCanvas(page, { showNodeHeaders: true, autoLayoutGroupContents })
   await addNodeFromSidebar(page, 'Prompt')
-  await addNodeFromSidebar(page, 'Prompt')
+  await addNodeFromSidebar(page, 'Text Generator')
   await addNodeFromSidebar(page, 'Image')
 
   await positionNodes(page, [
-    { type: 'prompt', nth: 0, x: 300, y: 200 },
-    { type: 'prompt', nth: 1, x: 300, y: 500 },
-    { type: 'image', x: 1200, y: 800 },
+    { type: 'prompt', x: 300, y: 200 },
+    { type: 'text-generator', x: 300, y: 560 },
+    { type: 'image', x: 1500, y: 900 },
   ])
 
-  const prompts = page.locator('.vue-flow__node-prompt')
-  await prompts.nth(0).locator('.node-header').click()
-  await prompts.nth(1).locator('.node-header').click({ modifiers: [MODIFIER] })
+  await page.locator('.vue-flow__node-prompt .node-header').click()
+  await page.locator('.vue-flow__node-text-generator .node-header').click({ modifiers: [MODIFIER] })
   await page.keyboard.press(`${MODIFIER}+g`)
   await page.waitForTimeout(300)
 
   await expect(page.locator('.vue-flow__node-group')).toHaveCount(1)
 
   await connectNodesProgrammatic(page, [
-    { sourceType: 'prompt', sourceHandle: 'output-0', targetType: 'prompt', targetHandle: 'input-0', sourceNth: 0, targetNth: 1 },
+    { sourceType: 'prompt', sourceHandle: 'output-0', targetType: 'text-generator', targetHandle: 'input-1' },
+    { sourceType: 'image', sourceHandle: 'output-0', targetType: 'text-generator', targetHandle: 'input-0' },
   ])
 }
 
 test.describe('Auto layout with groups', () => {
-  test('keeps the group around its content and sizes it to fit', async ({ page }) => {
+  test('moves the group but leaves its content alone by default', async ({ page }) => {
     await setupGroupedFlow(page)
+
+    const before = await readNodes(page)
+    const groupBefore = firstOfType(before, 'group')
+    const childrenBefore = before.filter(n => n.parentNode === groupBefore.id)
+    expect(childrenBefore).toHaveLength(2)
+
+    await autoLayout(page)
+
+    const after = await readNodes(page)
+    const groupAfter = firstOfType(after, 'group')
+
+    // The box travels with the flow...
+    expect([groupAfter.x, groupAfter.y]).not.toEqual([groupBefore.x, groupBefore.y])
+
+    // ...carrying its content untouched, at the very same size
+    expect(groupAfter.width).toBe(groupBefore.width)
+    expect(groupAfter.height).toBe(groupBefore.height)
+
+    for (const child of childrenBefore) {
+      const moved = after.find(n => n.id === child.id)
+      expect(moved.parentNode).toBe(groupAfter.id)
+      expect(moved.relativeX).toBe(child.relativeX)
+      expect(moved.relativeY).toBe(child.relativeY)
+    }
+  })
+
+  test('arranges the content and resizes the group when the setting is on', async ({ page }) => {
+    await setupGroupedFlow(page, { autoLayoutGroupContents: true })
     await autoLayout(page)
 
     const nodes = await readNodes(page)
