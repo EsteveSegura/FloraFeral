@@ -44,6 +44,7 @@ flora/
 │   │   ├── useNodeCreation.js        # Node creation helpers
 │   │   ├── useDragAndDrop.js         # Drag & drop logic
 │   │   ├── useGroupManagement.js     # Group/ungroup operations
+│   │   ├── useAutoLayout.js          # Arrange the canvas by dependency
 │   │   └── useKeyboardShortcuts.js   # Global keyboard shortcuts
 │   ├── views/
 │   │   └── FlowCanvasView.vue        # Main app canvas (~177 lines)
@@ -57,6 +58,7 @@ flora/
 │   │   ├── connection.js             # Connection validation
 │   │   ├── flow-io.js                # Flow export/import
 │   │   ├── group-membership.js       # Which nodes belong to a group
+│   │   ├── auto-layout.js            # Dependency based node arrangement
 │   │   ├── batch-io.js               # Batch input/output roles and IO
 │   │   ├── prompt-template.js        # Shared {{VARIABLE}} handling
 │   │   └── zip.js                    # ZIP writer for batch results
@@ -130,7 +132,8 @@ const { createNodeAtPosition } = useNodeCreation(flowStore)
 // Complex composables
 const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
-useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore })
+const { handleAutoLayout, undoAutoLayout, canUndoLayout } = useAutoLayout(flowStore, { applyNodeChanges, fitView })
+useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, canUndoLayout, copiedNodes, flowStore })
 ```
 
 **Features:**
@@ -141,6 +144,7 @@ useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowSt
 - Viewport controls (lock, fit view)
 - Copy/paste the selection, keeping its layout and input connections (Ctrl+C, Ctrl+V)
 - Group nodes (Ctrl+G)
+- Auto layout: arrange every node by dependency, undoable with Ctrl+Z
 - Settings modal
 - Automatic group management
 
@@ -351,6 +355,45 @@ export function useNodeCreation(flowStore) {
   return { createNodeAtPosition }
 }
 ```
+
+**useAutoLayout.js** - Arrange the canvas by dependency
+```javascript
+export function useAutoLayout(flowStore, { applyNodeChanges, fitView }) {
+  const snapshot = ref(null)  // positions and group sizes before the last layout
+
+  async function handleAutoLayout() { /* ... */ }
+  async function undoAutoLayout() { /* ... */ }
+
+  return { canUndoLayout, handleAutoLayout, undoAutoLayout }
+}
+```
+The arrangement itself lives in `src/lib/auto-layout.js`, which is pure and takes no
+Vue dependency. Columns come from the `levels` of `topologicalSort()`: that layering
+already places a node right after its last dependency, which is exactly its column in a
+left to right layout. Within a column the order is seeded with the Y the user is already
+looking at and then refined with barycenter sweeps over ranks, never pixels — node
+heights span 150 to 700px and a pixel barycenter swings with them instead of with the
+topology.
+
+Groups are collapsed into single items. The content of each group is arranged first,
+because the resulting box is the slot the outer layout has to reserve for it, padding
+and minimum size included. Edges are redrawn between the blocks that actually get
+placed, so an edge in or out of a group becomes an edge of the group itself. That
+collapsing can turn an acyclic flow into a cyclic one (a node outside a group sitting
+between two of its children), and nothing in the app forbids a real cycle either, so a
+DFS drops the back edges before layering — for the layout only, the flow keeps them.
+
+Two invariants hold the result together. Every box the layout places is disjoint from
+the others, which is what keeps `syncGroupMembership()` from adopting a node that only
+looks like it belongs to a group. And the arrangement is idempotent: running it twice
+changes nothing, since the seed is the current Y and the result is anchored on the
+top-left corner the canvas already occupied.
+
+Comment nodes are annotations rather than part of the flow, so a loose one keeps its
+place; it is only nudged if a group happened to land on top of it. Comments inside a
+group are arranged with the rest of its content. Since the repo has no history and a
+layout discards every manual placement, the composable keeps a one step snapshot that
+`Ctrl+Z` restores.
 
 ### Complex Composables
 

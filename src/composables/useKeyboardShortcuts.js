@@ -1,12 +1,13 @@
 /**
  * Composable for Keyboard Shortcuts
- * Handles global keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+G)
+ * Handles global keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+G, Ctrl+Z)
  * Copy and paste act on the whole selection, see useCopyPaste
+ * Ctrl+Z only reverts an auto layout, see useAutoLayout
  */
 
 import { onMounted, onUnmounted } from 'vue'
 
-export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore }) {
+export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, canUndoLayout, copiedNodes, flowStore }) {
   /**
    * Handle keyboard shortcuts
    */
@@ -42,6 +43,16 @@ export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, cop
     if ((event.ctrlKey || event.metaKey) && event.key === 'g') {
       event.preventDefault()
       handleGroup()
+    }
+
+    // Check for Ctrl+Z or Cmd+Z (Mac) - Undo the last auto layout.
+    // Nothing else in the app is undoable, so with no layout to revert the key
+    // is left alone and the browser keeps its own undo
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+      if (!isEditableField && canUndoLayout.value) {
+        event.preventDefault()
+        undoAutoLayout()
+      }
     }
   }
 

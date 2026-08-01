@@ -21,6 +21,7 @@
         @open-batch="isBatchModalOpen = true"
         @lock-toggle="handleLockToggle"
         @fit-view="handleFitView"
+        @auto-layout="handleAutoLayout"
         @open-settings="isSettingsModalOpen = true"
       />
 
@@ -128,6 +129,7 @@ import { useCopyPaste } from '@/composables/useCopyPaste'
 import { useNodeCreation } from '@/composables/useNodeCreation'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { useGroupManagement } from '@/composables/useGroupManagement'
+import { useAutoLayout } from '@/composables/useAutoLayout'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useConnectionDrop } from '@/composables/useConnectionDrop'
@@ -152,7 +154,7 @@ const showIntro = ref(false)
 const showAlert = computed(() => !settingsStore.getReplicateApiKey())
 
 // VueFlow composable
-const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
+const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
 
 // Use composables
 const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })
@@ -217,6 +219,7 @@ const {
 } = useConnectionDrop(flowStore, createNodeAtPosition, screenToFlowCoordinate, { addEdges }, openNodesMenuAt, closeMenu)
 const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, closeNodesMenu, menuOrigin)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
+const { handleAutoLayout, undoAutoLayout, canUndoLayout } = useAutoLayout(flowStore, { applyNodeChanges, fitView })
 
 // Register right-click handlers for context menus
 onPaneContextMenu(handlePaneContextMenu)
@@ -252,7 +255,7 @@ function onRenameConfirm(label) {
 }
 
 // Setup keyboard shortcuts
-useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore })
+useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, canUndoLayout, copiedNodes, flowStore })
 
 // Register connection handler - use addEdges directly
 onConnect((params) => {

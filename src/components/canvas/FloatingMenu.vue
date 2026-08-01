@@ -52,6 +52,15 @@
     >
       <img :src="ReframeIcon" alt="Fit View" />
     </button>
+    <!-- Rearranging every node is a mass move, so the lock has to cover it too -->
+    <button
+      class="menu-icon-button"
+      :disabled="isLocked"
+      @click="emit('auto-layout')"
+      title="Auto Layout"
+    >
+      <img :src="AutoLayoutIcon" alt="Auto Layout" />
+    </button>
 
     <!-- Separator -->
     <div class="menu-separator"></div>
@@ -71,6 +80,7 @@
 import LockIcon from '@/assets/lock.svg'
 import UnlockIcon from '@/assets/unlock.svg'
 import ReframeIcon from '@/assets/reframe.svg'
+import AutoLayoutIcon from '@/assets/auto-layout.svg'
 import GearIcon from '@/assets/gear.svg'
 import BatchIcon from '@/assets/batch.svg'
 
@@ -92,6 +102,7 @@ const emit = defineEmits([
   'open-batch',
   'lock-toggle',
   'fit-view',
+  'auto-layout',
   'open-settings'
 ])
 </script>
@@ -148,6 +159,16 @@ const emit = defineEmits([
 
 .menu-icon-button:active {
   transform: scale(0.95);
+}
+
+.menu-icon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.menu-icon-button:disabled:hover {
+  background: var(--flora-color-surface);
+  transform: none;
 }
 
 .menu-icon-button.active {
