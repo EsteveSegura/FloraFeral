@@ -144,7 +144,7 @@ useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, can
 - Viewport controls (lock, fit view)
 - Copy/paste the selection, keeping its layout and input connections (Ctrl+C, Ctrl+V)
 - Group nodes (Ctrl+G)
-- Auto layout: arrange every node by dependency, undoable with Ctrl+Z
+- Auto layout: arrange every node by dependency, undoable with Ctrl+Z (beta, off by default)
 - Settings modal
 - Automatic group management
 
@@ -367,6 +367,9 @@ export function useAutoLayout(flowStore, { applyNodeChanges, fitView }) {
   return { canUndoLayout, handleAutoLayout, undoAutoLayout }
 }
 ```
+The feature is in beta: the button only shows up once **Settings → Beta → Auto Layout**
+is enabled, which is what `FloatingMenu` reads through its `showAutoLayout` prop.
+
 The arrangement itself lives in `src/lib/auto-layout.js`, which is pure and takes no
 Vue dependency. Columns come from the `levels` of `topologicalSort()`: that layering
 already places a node right after its last dependency, which is exactly its column in a
@@ -489,12 +492,14 @@ The settings store (`useSettingsStore`) maintains app configuration:
 {
   showNodeHeaders: ref(false),           // Show/hide node headers
   skipSaveDialog: ref(false),            // Export with the default filename
+  betaAutoLayout: ref(false),            // Show the Auto Layout button
   autoLayoutGroupContents: ref(false),   // Let the auto layout rearrange groups inside
 
   // Actions
   toggleNodeHeaders(),
   setNodeHeaders(value),
   setSkipSaveDialog(value),
+  setBetaAutoLayout(value),
   setAutoLayoutGroupContents(value)
 }
 ```

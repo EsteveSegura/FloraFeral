@@ -15,6 +15,7 @@
         ref="floatingMenu"
         :is-locked="isLocked"
         :is-nodes-menu-open="isNodesMenuOpen"
+        :show-auto-layout="settingsStore.betaAutoLayout"
         @toggle-nodes="toggleNodesMenu"
         @export="onExportClick"
         @import="handleImport"

@@ -52,12 +52,14 @@
     >
       <img :src="ReframeIcon" alt="Fit View" />
     </button>
-    <!-- Rearranging every node is a mass move, so the lock has to cover it too -->
+    <!-- Beta, so it only shows up once enabled in the settings. Rearranging
+         every node is a mass move, so the lock has to cover it too -->
     <button
+      v-if="showAutoLayout"
       class="menu-icon-button"
       :disabled="isLocked"
       @click="emit('auto-layout')"
-      title="Auto Layout"
+      title="Auto Layout (beta)"
     >
       <img :src="AutoLayoutIcon" alt="Auto Layout" />
     </button>
@@ -92,6 +94,10 @@ defineProps({
   isNodesMenuOpen: {
     type: Boolean,
     required: true
+  },
+  showAutoLayout: {
+    type: Boolean,
+    default: false
   }
 })
 
