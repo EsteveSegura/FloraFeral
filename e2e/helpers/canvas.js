@@ -9,17 +9,24 @@ export const TEST_IMAGE_PATH = path.resolve(import.meta.dirname, '../assets/back
  * @param {Object} [options]
  * @param {boolean} [options.showNodeHeaders=false] - Node headers are off by
  *        default in the app, and the rename editor lives in them
+ * @param {boolean} [options.betaAutoLayout=false] - The Auto Layout button is a
+ *        beta feature, hidden until it is switched on in the settings
  * @param {boolean} [options.autoLayoutGroupContents=false] - Off by default in
  *        the app too: the auto layout only moves groups, it does not rearrange
  *        what is inside them
  */
-export async function setupBlankCanvas(page, { showNodeHeaders = false, autoLayoutGroupContents = false } = {}) {
+export async function setupBlankCanvas(page, {
+  showNodeHeaders = false,
+  betaAutoLayout = false,
+  autoLayoutGroupContents = false,
+} = {}) {
   await page.addInitScript((settings) => {
     localStorage.setItem('flora-settings', JSON.stringify(settings))
   }, {
     replicateApiKey: 'test-api-key-fake',
     openaiApiKey: 'test-openai-key-fake',
     showNodeHeaders,
+    betaAutoLayout,
     autoLayoutGroupContents,
   })
   await page.goto('/')

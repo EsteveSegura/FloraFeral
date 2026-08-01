@@ -41,15 +41,33 @@ async function readNodes(page) {
 const ofType = (nodes, type) => nodes.filter(n => n.type === type)
 const firstOfType = (nodes, type) => ofType(nodes, type)[0]
 
+const AUTO_LAYOUT_BUTTON = 'button[title="Auto Layout (beta)"]'
+
+/** The feature is in beta, so every spec has to opt into it */
+const setupCanvas = (page, options = {}) =>
+  setupBlankCanvas(page, { ...options, betaAutoLayout: true })
+
 async function autoLayout(page) {
-  await page.locator('button[title="Auto Layout"]').click()
+  await page.locator(AUTO_LAYOUT_BUTTON).click()
   // the button ends with a fitView animation of 300ms
   await page.waitForTimeout(700)
 }
 
+test.describe('Auto layout beta flag', () => {
+  test('hides the button until the beta is enabled', async ({ page }) => {
+    await setupBlankCanvas(page)
+    await expect(page.locator(AUTO_LAYOUT_BUTTON)).toHaveCount(0)
+  })
+
+  test('shows the button once the beta is enabled', async ({ page }) => {
+    await setupCanvas(page)
+    await expect(page.locator(AUTO_LAYOUT_BUTTON)).toBeVisible()
+  })
+})
+
 test.describe('Auto layout ordering', () => {
   test('lines up a chain left to right, whatever order it was placed in', async ({ page }) => {
-    await setupBlankCanvas(page)
+    await setupCanvas(page)
     await addNodeFromSidebar(page, 'Prompt')
     await addNodeFromSidebar(page, 'Text Generator')
     await addNodeFromSidebar(page, 'Image Generator')
@@ -77,7 +95,7 @@ test.describe('Auto layout ordering', () => {
   })
 
   test('puts two sources in the same column, ahead of what they feed', async ({ page }) => {
-    await setupBlankCanvas(page)
+    await setupCanvas(page)
     await addNodeFromSidebar(page, 'Image')
     await addNodeFromSidebar(page, 'Prompt')
     await addNodeFromSidebar(page, 'Image Generator')
@@ -107,7 +125,7 @@ test.describe('Auto layout ordering', () => {
   })
 
   test('running it twice changes nothing', async ({ page }) => {
-    await setupBlankCanvas(page)
+    await setupCanvas(page)
     await addNodeFromSidebar(page, 'Prompt')
     await addNodeFromSidebar(page, 'Text Generator')
     await addNodeFromSidebar(page, 'Image Generator')
@@ -132,7 +150,7 @@ test.describe('Auto layout ordering', () => {
   })
 
   test('leaves a loose comment where the user put it', async ({ page }) => {
-    await setupBlankCanvas(page)
+    await setupCanvas(page)
     await addNodeFromSidebar(page, 'Prompt')
     await addNodeFromSidebar(page, 'Text Generator')
     await addNodeFromSidebar(page, 'Comment')
@@ -161,7 +179,7 @@ test.describe('Auto layout ordering', () => {
  * not focus a textarea.
  */
 async function setupGroupedFlow(page, { autoLayoutGroupContents = false } = {}) {
-  await setupBlankCanvas(page, { showNodeHeaders: true, autoLayoutGroupContents })
+  await setupCanvas(page, { showNodeHeaders: true, autoLayoutGroupContents })
   await addNodeFromSidebar(page, 'Prompt')
   await addNodeFromSidebar(page, 'Text Generator')
   await addNodeFromSidebar(page, 'Image')
@@ -286,7 +304,7 @@ test.describe('Auto layout with groups', () => {
 
 test.describe('Auto layout undo', () => {
   test('Ctrl+Z puts every node back where it was', async ({ page }) => {
-    await setupBlankCanvas(page)
+    await setupCanvas(page)
     await addNodeFromSidebar(page, 'Prompt')
     await addNodeFromSidebar(page, 'Text Generator')
     await addNodeFromSidebar(page, 'Image Generator')
