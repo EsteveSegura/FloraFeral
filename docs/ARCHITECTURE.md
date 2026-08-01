@@ -377,7 +377,10 @@ topology.
 
 Groups are collapsed into single items. The content of each group is arranged first,
 because the resulting box is the slot the outer layout has to reserve for it, padding
-and minimum size included. Edges are redrawn between the blocks that actually get
+and minimum size included. Whether that content is arranged at all is up to the
+**Arrange the content of groups** setting: with it off, which is the default, a group
+keeps its size and its children keep their positions relative to it, and only the box
+itself is moved. Edges are redrawn between the blocks that actually get
 placed, so an edge in or out of a group becomes an edge of the group itself. That
 collapsing can turn an acyclic flow into a cyclic one (a node outside a group sitting
 between two of its children), and nothing in the app forbids a real cycle either, so a
@@ -484,13 +487,19 @@ The settings store (`useSettingsStore`) maintains app configuration:
 
 ```javascript
 {
-  showNodeHeaders: ref(false),  // Show/hide node headers
+  showNodeHeaders: ref(false),           // Show/hide node headers
+  skipSaveDialog: ref(false),            // Export with the default filename
+  autoLayoutGroupContents: ref(false),   // Let the auto layout rearrange groups inside
 
   // Actions
   toggleNodeHeaders(),
-  setNodeHeaders(value)
+  setNodeHeaders(value),
+  setSkipSaveDialog(value),
+  setAutoLayoutGroupContents(value)
 }
 ```
+Everything here is persisted to `localStorage` under `flora-settings`, API keys
+included.
 
 ### Why so simple?
 

@@ -8,8 +8,11 @@ import { computed, nextTick, ref } from 'vue'
 import { computeAutoLayout } from '@/lib/auto-layout'
 import { getGroupSize, isCenterInsideGroup } from '@/lib/group-membership'
 import { NODE_TYPES } from '@/lib/node-shapes'
+import { useSettingsStore } from '@/stores/settings'
 
 export function useAutoLayout(flowStore, { applyNodeChanges, fitView }) {
+  const settingsStore = useSettingsStore()
+
   // Positions and group sizes as they were right before the last layout
   const snapshot = ref(null)
 
@@ -63,7 +66,9 @@ export function useAutoLayout(flowStore, { applyNodeChanges, fitView }) {
       size: node.type === NODE_TYPES.GROUP ? getGroupSize(node) : null
     }))
 
-    const { positions, groupSizes } = computeAutoLayout(flowStore.nodes, flowStore.edges)
+    const { positions, groupSizes } = computeAutoLayout(flowStore.nodes, flowStore.edges, {
+      layoutGroupContents: settingsStore.autoLayoutGroupContents
+    })
     if (!positions.size) return
 
     resizeGroups(groupSizes)

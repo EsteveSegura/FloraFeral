@@ -4,7 +4,9 @@
  * Arranges the canvas by dependency: sources on the left, and every node to the
  * right of whatever feeds it. Groups are laid out as blocks — their content is
  * arranged first, and the resulting box takes part in the outer layout as a
- * single item, so a group never overlaps anything around it.
+ * single item, so a group never overlaps anything around it. With
+ * `layoutGroupContents` off the content is left untouched and the box keeps its
+ * size; only the group itself moves.
  *
  * The layering comes from `topologicalSort`, which already assigns a node to the
  * level right after its last dependency. That level is the column.
@@ -22,7 +24,10 @@ export const AUTO_LAYOUT_DEFAULTS = {
   groupMinHeight: 150,
   bandGap: 80,
   bandMaxWidth: 1200,
-  sweeps: 4
+  sweeps: 4,
+  // Arrange what is inside each group and resize the box to fit it. Turned off
+  // by the canvas, which only moves groups around, see the Auto Layout setting
+  layoutGroupContents: true
 }
 
 const WHITE = 0
@@ -407,8 +412,9 @@ export function computeAutoLayout(nodes, edges, opts = {}) {
   for (const group of groups) {
     const children = nodes.filter(node => parentOf(node) === group.id)
 
-    if (!children.length) {
-      // Nothing to arrange, so keep whatever size the user gave it
+    // Nothing to arrange, or the caller only wants the box moved: keep the size
+    // the user gave it, and its children keep their positions relative to it
+    if (!children.length || !options.layoutGroupContents) {
       interiors.set(group.id, {
         size: clampGroupSize(getGroupSize(group), options),
         positions: new Map(),
