@@ -15,12 +15,10 @@
         class="group-play-btn"
         :disabled="!canRun"
         :title="playTitle"
+        aria-label="Play group"
         @click="runGroup"
       >
-        <svg class="group-play-icon" viewBox="0 0 8 8" fill="currentColor">
-          <polygon points="0,0 8,4 0,8" />
-        </svg>
-        <span>Play group</span>
+        <span class="group-play-icon">▶</span>
       </button>
     </NodeToolbar>
 
@@ -168,26 +166,30 @@ function blurOnEnter(event) {
   outline: none;
 }
 
+/* Same round button as the main Play, one size down: a group run is a smaller
+   scope than running the whole canvas */
 .group-play-btn {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
-  gap: var(--flora-space-2);
-  padding: var(--flora-space-2) var(--flora-space-3);
-  background: var(--flora-color-accent);
+  justify-content: center;
+  background: #1ac460;
   border: none;
-  border-radius: var(--flora-radius-md);
-  box-shadow: var(--flora-shadow-lg);
-  color: white;
-  font-family: var(--flora-font-family-base);
-  font-size: var(--flora-font-size-sm);
-  font-weight: var(--flora-font-weight-medium);
+  border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .group-play-btn:hover:not(:disabled) {
-  background: var(--flora-color-accent-hover);
+  background: #15a352;
+  transform: scale(1.05);
+}
+
+.group-play-btn:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .group-play-btn:disabled {
@@ -196,8 +198,9 @@ function blurOnEnter(event) {
 }
 
 .group-play-icon {
-  width: 8px;
-  height: 8px;
+  color: white;
+  font-size: 13px;
+  margin-left: 2px;
 }
 
 .group-label:focus {
