@@ -1,6 +1,13 @@
 <template>
   <div class="group-node">
-    <NodeResizer v-if="selected" min-width="200" min-height="150" />
+    <NodeResizer
+      v-if="selected"
+      :min-width="200"
+      :min-height="150"
+      @resize-start="onResizeStart"
+      @resize="onResize"
+      @resize-end="onResizeEnd"
+    />
 
     <div
       ref="labelDiv"
@@ -22,6 +29,7 @@ import { useVueFlow } from '@vue-flow/core'
 import { NodeResizer } from '@vue-flow/node-resizer'
 import '@vue-flow/node-resizer/dist/style.css'
 import { ensureUniqueLabel } from '@/lib/node-label'
+import { syncGroupMembership } from '@/lib/group-membership'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -30,9 +38,50 @@ const props = defineProps({
   selected: { type: Boolean, default: false }
 })
 
-const { updateNodeData, getNodes } = useVueFlow()
+const { updateNodeData, getNodes, findNode } = useVueFlow()
 
 const labelDiv = ref(null)
+
+// Group origin at the last resize event, only used while a handle is dragged
+let resizeOrigin = null
+
+function onResizeStart({ params }) {
+  resizeOrigin = { x: params.x, y: params.y }
+}
+
+/**
+ * The top and left handles resize the group by moving its origin. Children are
+ * positioned relative to that origin, so they would drift along with it unless
+ * they are shifted back by the same amount.
+ */
+function onResize({ params }) {
+  if (!resizeOrigin) return
+
+  const deltaX = params.x - resizeOrigin.x
+  const deltaY = params.y - resizeOrigin.y
+  if (deltaX === 0 && deltaY === 0) return
+
+  resizeOrigin = { x: params.x, y: params.y }
+
+  for (const child of getNodes.value) {
+    if (child.parentNode !== props.id) continue
+    child.position = {
+      x: child.position.x - deltaX,
+      y: child.position.y - deltaY
+    }
+  }
+}
+
+/**
+ * The new bounds decide who belongs to the group: nodes left outside are
+ * released and nodes the group now covers are adopted.
+ */
+function onResizeEnd() {
+  resizeOrigin = null
+
+  const group = findNode(props.id)
+  if (group) syncGroupMembership(group, getNodes.value)
+}
 
 function updateLabel(event) {
   const newLabel = event.target.textContent.trim() || 'Group'

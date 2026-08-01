@@ -56,6 +56,7 @@ flora/
 │   │   ├── node-registry.js          # Node component registry
 │   │   ├── connection.js             # Connection validation
 │   │   ├── flow-io.js                # Flow export/import
+│   │   ├── group-membership.js       # Which nodes belong to a group
 │   │   ├── batch-io.js               # Batch input/output roles and IO
 │   │   ├── prompt-template.js        # Shared {{VARIABLE}} handling
 │   │   └── zip.js                    # ZIP writer for batch results
@@ -376,6 +377,14 @@ export function useGroupManagement(flowStore, onNodeDragStop) {
   return { handleGroup }
 }
 ```
+Membership follows a single rule, implemented in `src/lib/group-membership.js`:
+a node belongs to a group when its center sits inside the group rectangle. It is
+applied whenever the geometry changes — a node is dropped, a group is moved, or
+a group is resized (`GroupNode.vue` syncs on `resize-end`) — so a node that
+looks like it is inside a group really is its child, and vice versa. Children
+store positions relative to their parent, which is why resizing from the top or
+left handles shifts them back by the same amount the group origin moved:
+otherwise the whole content would drift along with the handle.
 
 **useKeyboardShortcuts.js** - Global keyboard shortcuts
 ```javascript

@@ -7,6 +7,14 @@
 import { nextTick } from 'vue'
 import { createNode, NODE_TYPES, getNodeIOConfig } from '@/lib/node-shapes'
 import { ensureUniqueLabel } from '@/lib/node-label'
+import {
+  attachNodeToGroup,
+  detachNodeFromGroup,
+  getNodeSize,
+  isCenterInsideGroup,
+  syncGroupMembership,
+  toAbsolutePosition
+} from '@/lib/group-membership'
 
 export function useGroupManagement(flowStore, onNodeDragStop) {
   /**
@@ -16,79 +24,30 @@ export function useGroupManagement(flowStore, onNodeDragStop) {
     onNodeDragStop((event) => {
       const node = event.node
 
-      // Skip group nodes themselves
-      if (node.type === NODE_TYPES.GROUP) return
+      // A moved group keeps its children, but it may have been dropped over
+      // free nodes that now sit inside it
+      if (node.type === NODE_TYPES.GROUP) {
+        syncGroupMembership(node, flowStore.nodes)
+        return
+      }
 
       if (node.parentNode) {
-        // Node has a parent - check if it should be unlinked
+        // Node has a parent - unlink it once its center leaves the group
         const parentNode = flowStore.nodes.find(n => n.id === node.parentNode)
-        if (!parentNode || !parentNode.style) return
+        if (!parentNode) return
 
-        // Get parent dimensions
-        const parentWidth = parseInt(parentNode.style.width) || 0
-        const parentHeight = parseInt(parentNode.style.height) || 0
-
-        // Check if node is outside parent bounds (with some tolerance)
-        const tolerance = 50 // Allow 50px outside before unlinking
-        if (
-          node.position.x < -tolerance ||
-          node.position.y < -tolerance ||
-          node.position.x > parentWidth + tolerance ||
-          node.position.y > parentHeight + tolerance
-        ) {
-          // Node is outside parent, unlink it
-          console.log(`Unlinking node ${node.id} from parent ${node.parentNode}`)
-
-          // Convert position to absolute (parent position + relative position)
-          node.position = {
-            x: parentNode.position.x + node.position.x,
-            y: parentNode.position.y + node.position.y
-          }
-
-          // Remove parent relationship
-          delete node.parentNode
-          if (node.extent) delete node.extent
+        if (!isCenterInsideGroup(toAbsolutePosition(node, parentNode), node, parentNode)) {
+          detachNodeFromGroup(node, parentNode)
         }
       } else {
-        // Node has no parent - check if it should be linked to a group
-        const groups = flowStore.nodes.filter(n => n.type === NODE_TYPES.GROUP && n.id !== node.id)
+        // Node has no parent - link it to the first group covering its center
+        const group = flowStore.nodes.find(n =>
+          n.type === NODE_TYPES.GROUP &&
+          n.id !== node.id &&
+          isCenterInsideGroup(node.position, node, n)
+        )
 
-        for (const group of groups) {
-          if (!group.style) continue
-
-          // Get group dimensions and position
-          const groupX = group.position.x
-          const groupY = group.position.y
-          const groupWidth = parseInt(group.style.width) || 0
-          const groupHeight = parseInt(group.style.height) || 0
-
-          // Check if node center is inside group
-          const nodeWidth = node.dimensions?.width || 200
-          const nodeHeight = node.dimensions?.height || 150
-          const nodeCenterX = node.position.x + nodeWidth / 2
-          const nodeCenterY = node.position.y + nodeHeight / 2
-
-          if (
-            nodeCenterX >= groupX &&
-            nodeCenterX <= groupX + groupWidth &&
-            nodeCenterY >= groupY &&
-            nodeCenterY <= groupY + groupHeight
-          ) {
-            // Node is inside group, link it
-            console.log(`Linking node ${node.id} to parent ${group.id}`)
-
-            // Convert position to relative (node position - parent position)
-            node.position = {
-              x: node.position.x - groupX,
-              y: node.position.y - groupY
-            }
-
-            // Set parent relationship
-            node.parentNode = group.id
-
-            break // Only link to first matching group
-          }
-        }
+        if (group) attachNodeToGroup(node, group)
       }
     })
   }
@@ -120,10 +79,9 @@ export function useGroupManagement(flowStore, onNodeDragStop) {
       minX = Math.min(minX, node.position.x)
       minY = Math.min(minY, node.position.y)
       // Use actual dimensions if available, otherwise estimate
-      const nodeWidth = node.dimensions?.width || node.width || 250
-      const nodeHeight = node.dimensions?.height || node.height || 200
-      maxX = Math.max(maxX, node.position.x + nodeWidth)
-      maxY = Math.max(maxY, node.position.y + nodeHeight)
+      const { width, height } = getNodeSize(node)
+      maxX = Math.max(maxX, node.position.x + width)
+      maxY = Math.max(maxY, node.position.y + height)
     })
 
     // Add padding around the group
