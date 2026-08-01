@@ -79,6 +79,13 @@
       </VueFlow>
     </div>
 
+    <!-- Side panels, invoked from anywhere through useSidePanel -->
+    <NodeOptionsPanel
+      v-if="activePanel?.type === PANEL_TYPES.NODE_OPTIONS"
+      :key="activePanel.nodeId"
+      :node-id="activePanel.nodeId"
+    />
+
     <!-- Intro Modal -->
     <IntroModal v-model="showIntro" />
 
@@ -118,6 +125,7 @@ import FloatingMenu from '@/components/canvas/FloatingMenu.vue'
 import NodesSidebar from '@/components/canvas/NodesSidebar.vue'
 import NodeContextMenu from '@/components/canvas/NodeContextMenu.vue'
 import SettingsModal from '@/components/canvas/SettingsModal.vue'
+import NodeOptionsPanel from '@/components/canvas/NodeOptionsPanel.vue'
 import IntroModal from '@/components/canvas/IntroModal.vue'
 import AlertBanner from '@/components/canvas/AlertBanner.vue'
 import SaveDialog from '@/components/canvas/SaveDialog.vue'
@@ -134,9 +142,13 @@ import { useAutoLayout } from '@/composables/useAutoLayout'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useConnectionDrop } from '@/composables/useConnectionDrop'
+import { useSidePanel, PANEL_TYPES } from '@/composables/useSidePanel'
 
 const flowStore = useFlowStore()
 const settingsStore = useSettingsStore()
+
+// Which side panel is on screen, if any. Nodes open theirs from their toolbar
+const { activePanel } = useSidePanel()
 
 const isNodesMenuOpen = ref(false)
 const mousePosition = ref({ x: 0, y: 0 })

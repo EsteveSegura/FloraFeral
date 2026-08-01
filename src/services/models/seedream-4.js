@@ -56,6 +56,47 @@ export const SEEDREAM_4 = {
         type: 'checkbox',
         default: true
       }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
+      {
+        key: 'width',
+        label: 'Custom width',
+        type: 'number',
+        min: 1024,
+        max: 4096,
+        default: 2048,
+        description: 'Only used when Size is set to custom'
+      },
+      {
+        key: 'height',
+        label: 'Custom height',
+        type: 'number',
+        min: 1024,
+        max: 4096,
+        default: 2048,
+        description: 'Only used when Size is set to custom'
+      },
+      {
+        key: 'sequential_image_generation',
+        label: 'Sequential generation',
+        type: 'select',
+        enum: ['disabled', 'auto'],
+        default: 'disabled',
+        description: 'With auto, the model decides whether to return a set of related images'
+      },
+      {
+        key: 'max_images',
+        label: 'Max images',
+        type: 'number',
+        min: 1,
+        max: 15,
+        default: 1,
+        description: 'Cap for sequential generation. Input plus generated images cannot exceed 15'
+      }
     ]
   },
 

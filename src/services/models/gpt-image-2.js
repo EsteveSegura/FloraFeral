@@ -62,6 +62,46 @@ export const GPT_IMAGE_2 = {
         enum: ['webp', 'png', 'jpeg'],
         default: 'webp'
       }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
+      {
+        key: 'number_of_images',
+        label: 'Number of images',
+        type: 'number',
+        min: 1,
+        max: 10,
+        default: 1,
+        description: 'The node shows the first one; the rest come back in the same response'
+      },
+      {
+        key: 'output_compression',
+        label: 'Output compression',
+        type: 'number',
+        min: 0,
+        max: 100,
+        default: 90,
+        description: 'Compression level as a percentage'
+      },
+      {
+        key: 'moderation',
+        label: 'Moderation',
+        type: 'select',
+        enum: ['auto', 'low'],
+        default: 'auto',
+        description: 'Content moderation level applied by OpenAI'
+      },
+      {
+        key: 'user_id',
+        label: 'User id',
+        type: 'text',
+        default: '',
+        placeholder: 'Optional',
+        description: 'Identifier for your end user, so OpenAI can trace abuse back to them'
+      }
     ]
   },
 

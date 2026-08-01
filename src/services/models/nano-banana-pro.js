@@ -47,6 +47,31 @@ export const NANO_BANANA_PRO = {
         enum: ['1K', '2K', '4K'],
         default: '2K'
       }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
+      {
+        key: 'output_format',
+        label: 'Output format',
+        type: 'select',
+        enum: ['png', 'jpg'],
+        default: 'png'
+      },
+      {
+        key: 'safety_filter_level',
+        label: 'Safety filter level',
+        type: 'select',
+        enum: [
+          'block_low_and_above',
+          'block_medium_and_above',
+          'block_only_high'
+        ],
+        default: 'block_only_high',
+        description: 'How strict the model is about blocking unsafe generations'
+      }
     ]
   },
 

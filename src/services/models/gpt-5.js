@@ -49,6 +49,21 @@ export const GPT_5 = {
         max: 100000,
         default: null
       }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
+      {
+        key: 'system_prompt',
+        label: 'System prompt',
+        type: 'textarea',
+        rows: 6,
+        default: '',
+        placeholder: 'You are a helpful assistant...',
+        description: 'Sets how the assistant behaves, on top of the prompt coming into the node'
+      }
     ]
   },
 

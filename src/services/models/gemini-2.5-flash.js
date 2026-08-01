@@ -70,6 +70,21 @@ export const GEMINI_2_5_FLASH = {
         max: 24576,
         default: null
       }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
+      {
+        key: 'system_instruction',
+        label: 'System instruction',
+        type: 'textarea',
+        rows: 6,
+        default: '',
+        placeholder: 'Answer as a technical writer...',
+        description: 'Guides the behaviour of the model, on top of the prompt coming into the node'
+      }
     ]
   },
 

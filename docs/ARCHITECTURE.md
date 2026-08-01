@@ -27,7 +27,12 @@ flora/
 │   │   │   ├── FloatingMenu.vue      # Left sidebar menu with actions
 │   │   │   ├── NodesSidebar.vue      # Draggable nodes list
 │   │   │   ├── NodeContextMenu.vue   # Right-click menu on a node (batch marks)
+│   │   │   ├── NodeOptionsPanel.vue  # Side panel with the extra model options
 │   │   │   └── SettingsModal.vue     # Settings configuration modal
+│   │   ├── ui/
+│   │   │   ├── BaseModal.vue         # Centred modal dialog
+│   │   │   ├── BaseSidePanel.vue     # Panel docked to the right edge
+│   │   │   └── ModelControl.vue      # One uiSchema control, label over field
 │   │   ├── batch/
 │   │   │   └── BatchRunModal.vue     # Batch Run panel
 │   │   └── nodes/
@@ -45,6 +50,7 @@ flora/
 │   │   ├── useDragAndDrop.js         # Drag & drop logic
 │   │   ├── useGroupManagement.js     # Group/ungroup operations
 │   │   ├── useAutoLayout.js          # Arrange the canvas by dependency
+│   │   ├── useSidePanel.js           # Which side panel the canvas is showing
 │   │   └── useKeyboardShortcuts.js   # Global keyboard shortcuts
 │   ├── views/
 │   │   └── FlowCanvasView.vue        # Main app canvas (~177 lines)
@@ -117,6 +123,7 @@ User interacts with Canvas
 - `FloatingMenu.vue` - Left sidebar with action buttons
 - `NodesSidebar.vue` - Draggable nodes list
 - `SettingsModal.vue` - Settings configuration
+- `NodeOptionsPanel.vue` - Right side panel with the extra options of a node's model
 
 **Composables used:**
 ```javascript
@@ -134,6 +141,9 @@ const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, create
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
 const { handleAutoLayout, undoAutoLayout, canUndoLayout } = useAutoLayout(flowStore, { applyNodeChanges, fitView })
 useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, canUndoLayout, copiedNodes, flowStore })
+
+// Side panels, opened from anywhere (a node toolbar, a menu, …)
+const { activePanel } = useSidePanel()
 ```
 
 **Features:**
@@ -145,6 +155,7 @@ useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, can
 - Copy/paste the selection, keeping its layout and input connections (Ctrl+C, Ctrl+V)
 - Group nodes (Ctrl+G)
 - Auto layout: arrange every node by dependency, undoable with Ctrl+Z (beta, off by default)
+- Node options side panel, opened from the ⋮ button in a node toolbar
 - Settings modal
 - Automatic group management
 
@@ -400,6 +411,36 @@ place; it is only nudged if a group happened to land on top of it. Comments insi
 group are arranged with the rest of its content. Since the repo has no history and a
 layout discards every manual placement, the composable keeps a one step snapshot that
 `Ctrl+Z` restores.
+
+**useSidePanel.js** - Which side panel the canvas is showing
+```javascript
+export const PANEL_TYPES = { NODE_OPTIONS: 'node-options' }
+
+export function useSidePanel() {
+  return { activePanel, isPanelOpen, openPanel, closePanel, closePanelOfType }
+}
+```
+The state lives at module level, not inside the function. What opens a panel is usually a
+button several components deep inside VueFlow, while the panel itself is rendered by
+`FlowCanvasView`; the same trick the workflow event bus uses to let a node talk to the
+canvas without prop drilling. One panel at a time: opening another replaces it.
+
+`BaseSidePanel.vue` is the shell, docked to the right edge over the full height. It is
+deliberately not a `BaseModal` variant, because it has no overlay: a panel that tracks the
+selection needs the canvas to stay interactive, or the user could never deselect while it
+is up. It sits at `z-index: 900`, below modals, so Settings still opens on top of it.
+
+`NodeOptionsPanel.vue` is the only content so far. A node toolbar is a single row and
+stops scaling past a handful of controls, so every model splits its `uiSchema` in two:
+`controls` for the toolbar and `advancedControls` for the panel. Both are the same
+descriptor shape and both write to `data.params`, so nothing about serialization or the
+API payload changes. The ⋮ button only appears when the current model declares advanced
+controls.
+
+The panel reads its node through VueFlow's `findNode`, not through the store: `selected`
+is only kept up to date on VueFlow's own node objects, and the panel lives and dies by it.
+A watch on the selection closes the panel when the node is deselected, replaced by another
+selection, or deleted.
 
 ### Complex Composables
 
