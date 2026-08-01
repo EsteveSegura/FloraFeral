@@ -377,6 +377,13 @@ export function useGroupManagement(flowStore, onNodeDragStop) {
   return { handleGroup }
 }
 ```
+A selected group shows a **Play group** button in its `NodeToolbar`. It calls
+`executeWorkflow({ forceRerun: true, nodeIds })` with the ids of its children,
+and `getExecutableNodes()` narrows the run to that set: nodes outside the group
+are never re-run and feed the group with the output they already hold. The main
+Play button passes no `nodeIds`, so it keeps running the whole canvas and stays
+blind to groups.
+
 Membership follows a single rule, implemented in `src/lib/group-membership.js`:
 a node belongs to a group when its center sits inside the group rectangle. It is
 applied whenever the geometry changes — a node is dropped, a group is moved, or

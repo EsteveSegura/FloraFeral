@@ -9,6 +9,21 @@
       @resize-end="onResizeEnd"
     />
 
+    <!-- Node Toolbar: hides itself unless this group is the only node selected -->
+    <NodeToolbar :position="Position.Top" :offset="10">
+      <button
+        class="group-play-btn"
+        :disabled="!canRun"
+        :title="playTitle"
+        @click="runGroup"
+      >
+        <svg class="group-play-icon" viewBox="0 0 8 8" fill="currentColor">
+          <polygon points="0,0 8,4 0,8" />
+        </svg>
+        <span>Play group</span>
+      </button>
+    </NodeToolbar>
+
     <div
       ref="labelDiv"
       class="group-label"
@@ -24,12 +39,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useVueFlow } from '@vue-flow/core'
+import { computed, ref } from 'vue'
+import { Position, useVueFlow } from '@vue-flow/core'
 import { NodeResizer } from '@vue-flow/node-resizer'
+import { NodeToolbar } from '@vue-flow/node-toolbar'
 import '@vue-flow/node-resizer/dist/style.css'
 import { ensureUniqueLabel } from '@/lib/node-label'
 import { syncGroupMembership } from '@/lib/group-membership'
+import { useWorkflowExecution } from '@/composables/useWorkflowExecution'
+import { useBatchStore } from '@/stores/batch'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -39,8 +57,41 @@ const props = defineProps({
 })
 
 const { updateNodeData, getNodes, findNode } = useVueFlow()
+const { isExecuting, executeWorkflow, resetExecution } = useWorkflowExecution()
+const batchStore = useBatchStore()
 
 const labelDiv = ref(null)
+
+const childIds = computed(() =>
+  getNodes.value.filter(n => n.parentNode === props.id).map(n => n.id)
+)
+
+// A batch drives the same executor singleton, so a group run must not cut in
+const canRun = computed(() =>
+  childIds.value.length > 0 && !isExecuting.value && !batchStore.isRunning
+)
+
+const playTitle = computed(() => {
+  if (batchStore.isRunning) return 'Batch run in progress'
+  if (isExecuting.value) return 'Workflow already running'
+  if (!childIds.value.length) return 'This group is empty'
+  return 'Execute only the nodes inside this group'
+})
+
+/**
+ * Run the group in isolation: nodes outside it are left untouched, and they
+ * feed this run with the output they already hold.
+ */
+async function runGroup() {
+  if (!canRun.value) return
+
+  resetExecution()
+  try {
+    await executeWorkflow({ forceRerun: true, nodeIds: childIds.value })
+  } catch (error) {
+    console.error('Group execution failed:', error)
+  }
+}
 
 // Group origin at the last resize event, only used while a handle is dragged
 let resizeOrigin = null
@@ -115,6 +166,38 @@ function blurOnEnter(event) {
   pointer-events: auto;
   min-width: 120px;
   outline: none;
+}
+
+.group-play-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--flora-space-2);
+  padding: var(--flora-space-2) var(--flora-space-3);
+  background: var(--flora-color-accent);
+  border: none;
+  border-radius: var(--flora-radius-md);
+  box-shadow: var(--flora-shadow-lg);
+  color: white;
+  font-family: var(--flora-font-family-base);
+  font-size: var(--flora-font-size-sm);
+  font-weight: var(--flora-font-weight-medium);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease;
+}
+
+.group-play-btn:hover:not(:disabled) {
+  background: var(--flora-color-accent-hover);
+}
+
+.group-play-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.group-play-icon {
+  width: 8px;
+  height: 8px;
 }
 
 .group-label:focus {
