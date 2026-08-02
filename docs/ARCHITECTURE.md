@@ -689,8 +689,25 @@ const result = await replicateService.generateImage({
 ```
 
 **Configured models:**
-- `nano-banana-pro` - Fast model
-- `seedream-4` - Advanced model with more options
+
+| Model | Category | Notes |
+|---|---|---|
+| `nano-banana-pro` | image | The default model |
+| `nano-banana-2` | image | Flash speed, optional web and image search grounding |
+| `seedream-4` | image | Custom dimensions through `size: 'custom'` |
+| `seedream-4.5` | image | Same, minus the 1K size |
+| `seedream-5-lite` | image | 2K/3K only, no custom dimensions |
+| `flux-2-flex` | image | Adds `steps` and `guidance` over the other two FLUX |
+| `flux-2-pro` | image | Up to 8 reference images |
+| `flux-2-max` | image | Highest fidelity of the FLUX family |
+| `gpt-image-1`, `gpt-image-2` | image | Need an OpenAI key for gpt-image-1 |
+| `lang-segment-anything` | image | Segmentation, no prompt-driven generation |
+| `gpt-5`, `gemini-2.5-flash` | text | |
+| `p-video` | video | |
+
+A model is picked up by the Image Generator's dropdown as soon as it is added to the
+`MODELS` registry with `category: 'image'` — the list comes from `listModels(category)`,
+so there is nothing to register on the component side.
 
 Each model defines:
 - Accepted parameters
@@ -698,12 +715,22 @@ Each model defines:
 - UI Schema, split into `controls` for the node toolbar and `advancedControls` for the
   node options side panel
 
+Two payload shapes coexist and are not interchangeable: the Google and ByteDance models
+take their reference images in `image_input`, while the FLUX and gpt-image ones take them
+in `input_images`. Each `buildInput` maps the node's images onto its own key.
+
+The FLUX models also swap parameters depending on the aspect ratio: `custom` sends `width`
+and `height` and omits `resolution`, anything else sends `resolution` and omits the
+dimensions. The panel shows all three at once because the model, not the UI, decides which
+ones matter.
+
 ### One image per generation
 
 Several models can return a batch of images in a single prediction: `number_of_images` on
 the gpt-image models, `max_images` together with `sequential_image_generation` on
-seedream-4. **None of them is exposed in the UI, and `buildInput` always asks for exactly
-one image**, ignoring whatever a flow's `data.params` might carry.
+seedream-4, seedream-4.5 and seedream-5-lite. **None of them is exposed in the UI, and
+`buildInput` always asks for exactly one image**, ignoring whatever a flow's `data.params`
+might carry.
 
 An Image Generator node renders a single output and reads `imageUrl`, the first entry of
 the response. Every extra image was billed and then dropped on the floor, which is a

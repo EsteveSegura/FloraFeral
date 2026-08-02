@@ -131,6 +131,101 @@ export async function mockGptImage1(page, { response = FAKE_GENERATED_IMAGE, ass
 }
 
 /**
+ * Mock the Nano Banana 2 image generation endpoint.
+ * The real model returns a single URI, so `output` is a plain string here.
+ */
+export async function mockNanoBanana2(page, { response = FAKE_GENERATED_IMAGE, assertRequest } = {}) {
+  await page.route('**/v1/models/google/nano-banana-2/predictions', async (route) => {
+    const body = JSON.parse(route.request().postData())
+
+    if (assertRequest) {
+      assertRequest(body)
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'img-pred-' + Date.now(),
+        status: 'succeeded',
+        output: response,
+      }),
+    })
+  })
+}
+
+/**
+ * Mock the Seedream-4.5 image generation endpoint.
+ */
+export async function mockSeedream45(page, { response = FAKE_GENERATED_IMAGE, assertRequest } = {}) {
+  await page.route('**/v1/models/bytedance/seedream-4.5/predictions', async (route) => {
+    const body = JSON.parse(route.request().postData())
+
+    if (assertRequest) {
+      assertRequest(body)
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'img-pred-' + Date.now(),
+        status: 'succeeded',
+        output: [response],
+      }),
+    })
+  })
+}
+
+/**
+ * Mock the Seedream-5 Lite image generation endpoint.
+ */
+export async function mockSeedream5Lite(page, { response = FAKE_GENERATED_IMAGE, assertRequest } = {}) {
+  await page.route('**/v1/models/bytedance/seedream-5-lite/predictions', async (route) => {
+    const body = JSON.parse(route.request().postData())
+
+    if (assertRequest) {
+      assertRequest(body)
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'img-pred-' + Date.now(),
+        status: 'succeeded',
+        output: [response],
+      }),
+    })
+  })
+}
+
+/**
+ * Mock any of the three FLUX.2 image generation endpoints.
+ * They share a payload shape, so the variant is just part of the path.
+ * @param {'flex'|'pro'|'max'} variant
+ */
+export async function mockFlux2(page, variant, { response = FAKE_GENERATED_IMAGE, assertRequest } = {}) {
+  await page.route(`**/v1/models/black-forest-labs/flux-2-${variant}/predictions`, async (route) => {
+    const body = JSON.parse(route.request().postData())
+
+    if (assertRequest) {
+      assertRequest(body)
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'img-pred-' + Date.now(),
+        status: 'succeeded',
+        output: response,
+      }),
+    })
+  })
+}
+
+/**
  * Mock the P-Video video generation endpoint.
  * The real model returns a single URI, so `output` is a plain string here.
  */

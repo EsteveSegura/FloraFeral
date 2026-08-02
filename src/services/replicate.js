@@ -4,7 +4,13 @@
  */
 
 import NANO_BANANA_PRO from './models/nano-banana-pro'
+import NANO_BANANA_2 from './models/nano-banana-2'
 import SEEDREAM_4 from './models/seedream-4'
+import SEEDREAM_4_5 from './models/seedream-4.5'
+import SEEDREAM_5_LITE from './models/seedream-5-lite'
+import FLUX_2_FLEX from './models/flux-2-flex'
+import FLUX_2_PRO from './models/flux-2-pro'
+import FLUX_2_MAX from './models/flux-2-max'
 import LANG_SEGMENT_ANYTHING from './models/lang-segment-anything'
 import GPT_IMAGE_1 from './models/gpt-image-1'
 import GPT_IMAGE_2 from './models/gpt-image-2'
@@ -18,7 +24,13 @@ import { useSettingsStore } from '@/stores/settings'
  */
 const MODELS = {
   'nano-banana-pro': NANO_BANANA_PRO,
+  'nano-banana-2': NANO_BANANA_2,
   'seedream-4': SEEDREAM_4,
+  'seedream-4.5': SEEDREAM_4_5,
+  'seedream-5-lite': SEEDREAM_5_LITE,
+  'flux-2-flex': FLUX_2_FLEX,
+  'flux-2-pro': FLUX_2_PRO,
+  'flux-2-max': FLUX_2_MAX,
   'lang-segment-anything': LANG_SEGMENT_ANYTHING,
   'gpt-image-1': GPT_IMAGE_1,
   'gpt-image-2': GPT_IMAGE_2,
