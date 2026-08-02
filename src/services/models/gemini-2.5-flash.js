@@ -47,10 +47,16 @@ export const GEMINI_2_5_FLASH = {
         max: 1,
         step: 0.05,
         default: 0.95
-      },
+      }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
       {
         key: 'max_output_tokens',
-        label: 'Max Output Tokens',
+        label: 'Max output tokens',
         type: 'number',
         min: 1,
         max: 65535,
@@ -58,17 +64,29 @@ export const GEMINI_2_5_FLASH = {
       },
       {
         key: 'dynamic_thinking',
-        label: 'Dynamic Thinking',
+        label: 'Dynamic thinking',
         type: 'checkbox',
-        default: false
+        default: false,
+        description: 'Let the model size its own reasoning budget, overriding the one below'
       },
       {
         key: 'thinking_budget',
-        label: 'Thinking Budget',
+        label: 'Thinking budget',
         type: 'number',
         min: 0,
         max: 24576,
-        default: null
+        default: null,
+        placeholder: 'Model default',
+        description: 'Ignored while dynamic thinking is on. Set it to 0 to disable reasoning'
+      },
+      {
+        key: 'system_instruction',
+        label: 'System instruction',
+        type: 'textarea',
+        rows: 6,
+        default: '',
+        placeholder: 'Answer as a technical writer...',
+        description: 'Guides the behaviour of the model, on top of the prompt coming into the node'
       }
     ]
   },

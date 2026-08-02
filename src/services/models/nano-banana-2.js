@@ -1,33 +1,34 @@
 /**
- * Google Nano Banana Pro Model Configuration
- * Model: google/nano-banana-pro
+ * Google Nano Banana 2 Model Configuration
+ * Model: google/nano-banana-2
  */
 
-export const NANO_BANANA_PRO = {
-  id: 'nano-banana-pro',
-  name: 'Nano Banana Pro',
+export const NANO_BANANA_2 = {
+  id: 'nano-banana-2',
+  name: 'Nano Banana 2',
   owner: 'google',
   version: 'latest',
   category: 'image', // Model category: image generation
-  endpointPath: '/v1/models/google/nano-banana-pro/predictions',
+  endpointPath: '/v1/models/google/nano-banana-2/predictions',
 
   /**
    * Default parameters for the model
    */
   defaults: {
-    resolution: '2K',
     aspect_ratio: 'match_input_image',
-    output_format: 'png',
-    safety_filter_level: 'block_only_high'
+    resolution: '2K',
+    output_format: 'jpg',
+    google_search: false,
+    image_search: false
   },
 
   /**
-   * UI Schema - defines controls for the navbar
+   * UI Schema - defines controls for the node toolbar
    * Used to dynamically render UI controls for model parameters
    */
   uiSchema: {
-    id: 'nano-banana-pro',
-    label: 'Nano Banana Pro',
+    id: 'nano-banana-2',
+    label: 'Nano Banana 2',
     controls: [
       {
         key: 'aspect_ratio',
@@ -36,7 +37,8 @@ export const NANO_BANANA_PRO = {
         enum: [
           'match_input_image',
           '1:1', '2:3', '3:2', '3:4', '4:3',
-          '4:5', '5:4', '9:16', '16:9', '21:9'
+          '4:5', '5:4', '9:16', '16:9', '21:9',
+          '1:4', '4:1', '1:8', '8:1'
         ],
         default: 'match_input_image'
       },
@@ -57,20 +59,22 @@ export const NANO_BANANA_PRO = {
         key: 'output_format',
         label: 'Output format',
         type: 'select',
-        enum: ['png', 'jpg'],
-        default: 'png'
+        enum: ['jpg', 'png'],
+        default: 'jpg'
       },
       {
-        key: 'safety_filter_level',
-        label: 'Safety filter level',
-        type: 'select',
-        enum: [
-          'block_low_and_above',
-          'block_medium_and_above',
-          'block_only_high'
-        ],
-        default: 'block_only_high',
-        description: 'How strict the model is about blocking unsafe generations'
+        key: 'google_search',
+        label: 'Google Search grounding',
+        type: 'checkbox',
+        default: false,
+        description: 'Ground the image on real-time web results, such as weather or recent events'
+      },
+      {
+        key: 'image_search',
+        label: 'Image Search grounding',
+        type: 'checkbox',
+        default: false,
+        description: 'Pull web images in as visual context. It turns on web search too'
       }
     ]
   },
@@ -79,18 +83,14 @@ export const NANO_BANANA_PRO = {
    * Valid values for each parameter
    */
   validValues: {
-    resolution: ['1K', '2K', '4K'],
     aspect_ratio: [
       'match_input_image',
       '1:1', '2:3', '3:2', '3:4', '4:3',
-      '4:5', '5:4', '9:16', '16:9', '21:9'
+      '4:5', '5:4', '9:16', '16:9', '21:9',
+      '1:4', '4:1', '1:8', '8:1'
     ],
-    output_format: ['jpg', 'png'],
-    safety_filter_level: [
-      'block_low_and_above',
-      'block_medium_and_above',
-      'block_only_high'
-    ]
+    resolution: ['1K', '2K', '4K'],
+    output_format: ['jpg', 'png']
   },
 
   /**
@@ -115,10 +115,15 @@ export const NANO_BANANA_PRO = {
     return {
       prompt: prompt.trim(),
       image_input: imageInput,
-      resolution: params.resolution || this.defaults.resolution,
       aspect_ratio: params.aspect_ratio || this.defaults.aspect_ratio,
+      resolution: params.resolution || this.defaults.resolution,
       output_format: params.output_format || this.defaults.output_format,
-      safety_filter_level: params.safety_filter_level || this.defaults.safety_filter_level
+      google_search: params.google_search !== undefined
+        ? params.google_search
+        : this.defaults.google_search,
+      image_search: params.image_search !== undefined
+        ? params.image_search
+        : this.defaults.image_search
     }
   },
 
@@ -128,29 +133,24 @@ export const NANO_BANANA_PRO = {
    * @returns {Object} Validated parameters
    */
   validateParams(params = {}) {
-    const validated = {}
+    if (params.aspect_ratio && !this.validValues.aspect_ratio.includes(params.aspect_ratio)) {
+      throw new Error(`Invalid aspect_ratio. Must be one of: ${this.validValues.aspect_ratio.join(', ')}`)
+    }
 
     if (params.resolution && !this.validValues.resolution.includes(params.resolution)) {
       throw new Error(`Invalid resolution. Must be one of: ${this.validValues.resolution.join(', ')}`)
-    }
-
-    if (params.aspect_ratio && !this.validValues.aspect_ratio.includes(params.aspect_ratio)) {
-      throw new Error(`Invalid aspect_ratio. Must be one of: ${this.validValues.aspect_ratio.join(', ')}`)
     }
 
     if (params.output_format && !this.validValues.output_format.includes(params.output_format)) {
       throw new Error(`Invalid output_format. Must be one of: ${this.validValues.output_format.join(', ')}`)
     }
 
-    if (params.safety_filter_level && !this.validValues.safety_filter_level.includes(params.safety_filter_level)) {
-      throw new Error(`Invalid safety_filter_level. Must be one of: ${this.validValues.safety_filter_level.join(', ')}`)
-    }
-
     return {
-      resolution: params.resolution,
       aspect_ratio: params.aspect_ratio,
+      resolution: params.resolution,
       output_format: params.output_format,
-      safety_filter_level: params.safety_filter_level
+      google_search: params.google_search,
+      image_search: params.image_search
     }
   },
 
@@ -164,7 +164,7 @@ export const NANO_BANANA_PRO = {
       throw new Error('No output in response')
     }
 
-    // The output is typically an array with the image URL
+    // The model returns a single URI, but tolerate an array response
     const imageUrl = Array.isArray(response.output)
       ? response.output[0]
       : response.output
@@ -178,4 +178,4 @@ export const NANO_BANANA_PRO = {
   }
 }
 
-export default NANO_BANANA_PRO
+export default NANO_BANANA_2

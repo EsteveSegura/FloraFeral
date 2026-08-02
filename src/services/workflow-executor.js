@@ -18,7 +18,8 @@ const DEFAULT_OPTIONS = {
   continueOnError: false,   // Stop execution when a node fails
   skipCompleted: true,      // Skip nodes that already have valid output
   forceRerun: false,        // Force re-execution even if nodes have output
-  nodeTimeout: 300000       // 5 minutes timeout per node
+  nodeTimeout: 300000,      // 5 minutes timeout per node
+  nodeIds: null             // Restrict the run to these nodes (null = whole canvas)
 }
 
 /**
@@ -332,8 +333,14 @@ class WorkflowExecutor {
    * Get list of nodes that should be executed
    */
   getExecutableNodes(nodes, edges) {
+    // A scoped run (the play button of a group) only touches the nodes it was
+    // given; everything upstream keeps whatever output it already has
+    const scope = this.options.nodeIds ? new Set(this.options.nodeIds) : null
+
     return nodes
       .filter(node => {
+        if (scope && !scope.has(node.id)) return false
+
         // Check if node should be executed
         const shouldExec = shouldExecuteNode(node)
 

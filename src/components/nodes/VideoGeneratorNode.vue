@@ -68,6 +68,18 @@
             @change="onParamChange(control.key, $event.target.checked)"
           />
         </div>
+
+        <!-- The toolbar is one row and does not scale past a handful of
+             controls, so the rest of the model options live in a side panel -->
+        <button
+          v-if="advancedControls.length"
+          class="toolbar-more"
+          type="button"
+          title="More options"
+          @click="openPanel(PANEL_TYPES.NODE_OPTIONS, { nodeId: id })"
+        >
+          ⋮
+        </button>
       </div>
     </NodeToolbar>
 
@@ -188,6 +200,7 @@ import { PORT_TYPES } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
 import { convertUrlToBase64, isHttpUrl } from '@/lib/image-utils'
 import { useWorkflowEvents } from '@/composables/useWorkflowEvents'
+import { useSidePanel, PANEL_TYPES } from '@/composables/useSidePanel'
 
 const DEFAULT_MODEL = 'p-video'
 
@@ -302,6 +315,11 @@ const uiSchema = computed(() => {
 
 // Controls to render
 const controls = computed(() => uiSchema.value?.controls || [])
+
+// Model options that go to the side panel instead of the toolbar
+const advancedControls = computed(() => uiSchema.value?.advancedControls || [])
+
+const { openPanel } = useSidePanel()
 
 // Get model label from uiSchema
 function getModelLabel(modelId) {
@@ -601,6 +619,31 @@ async function handleGenerate() {
   flex-direction: column;
   gap: var(--flora-space-1);
   min-width: 120px;
+}
+
+/* Pushed to the far right, and kept there even when the toolbar wraps */
+.toolbar-more {
+  margin-left: auto;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--flora-radius-md);
+  cursor: pointer;
+  font-size: var(--flora-font-size-lg);
+  line-height: 1;
+  color: var(--flora-color-text-secondary);
+  transition: all var(--flora-transition-fast);
+  padding: 0;
+}
+
+.toolbar-more:hover {
+  background: var(--flora-color-bg-secondary);
+  color: var(--flora-color-text-primary);
 }
 
 /* Video Preview Modal */

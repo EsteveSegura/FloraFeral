@@ -40,14 +40,31 @@ export const GPT_5 = {
         type: 'select',
         enum: ['low', 'medium', 'high'],
         default: 'medium'
-      },
+      }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
       {
         key: 'max_completion_tokens',
-        label: 'Max Tokens',
+        label: 'Max tokens',
         type: 'number',
         min: 1,
         max: 100000,
-        default: null
+        default: null,
+        placeholder: 'Model default',
+        description: 'A high reasoning effort may need a higher cap, or the answer comes back empty'
+      },
+      {
+        key: 'system_prompt',
+        label: 'System prompt',
+        type: 'textarea',
+        rows: 6,
+        default: '',
+        placeholder: 'You are a helpful assistant...',
+        description: 'Sets how the assistant behaves, on top of the prompt coming into the node'
       }
     ]
   },

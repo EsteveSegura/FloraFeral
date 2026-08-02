@@ -80,6 +80,85 @@ Fast and efficient image generation model.
 
 **Input Images:** Supports up to 14 input images
 
+#### nano-banana-2 (Google)
+
+Gemini 3.1 Flash Image: Pro-level quality at Flash speed, with web grounding.
+
+**Parameters:**
+- `aspect_ratio`: "match_input_image", "1:1", "16:9", … up to "8:1" (default: "match_input_image")
+- `resolution`: "1K", "2K", "4K" (default: "2K")
+- `output_format`: "jpg", "png" (default: "jpg")
+- `google_search`: boolean (default: false) - Ground the image on real-time web results
+- `image_search`: boolean (default: false) - Use web images as visual context
+
+**Input Images:** Supports up to 14 input images
+
+#### seedream-4.5 (ByteDance)
+
+Upgraded SeeDream with stronger spatial understanding. Note that 1K is not a
+valid size here, unlike SeeDream-4.
+
+**Parameters:**
+- `size`: "2K", "4K", "custom" (default: "2K")
+- `aspect_ratio`: "match_input_image", "1:1", "16:9", … (default: "match_input_image")
+- `width` / `height`: 1024-4096, only read when `size` is "custom"
+- `disable_safety_checker`: boolean (default: false)
+
+**Input Images:** Supports up to 14 input images
+
+#### seedream-5-lite (ByteDance)
+
+SeeDream 5.0 lite: built-in reasoning and example-based editing.
+
+**Parameters:**
+- `aspect_ratio`: "match_input_image", "1:1", "16:9", … (default: "match_input_image")
+- `size`: "2K", "3K" (default: "2K")
+- `output_format`: "png", "jpeg" (default: "png")
+- `return_byteplus_urls`: boolean (default: false) - URLs that expire in 24 hours
+
+**Input Images:** Supports up to 14 input images
+
+#### flux-2-flex, flux-2-pro, flux-2-max (Black Forest Labs)
+
+The FLUX.2 family. They share a payload; Flex adds the quality-versus-speed
+dials, Max is the highest fidelity of the three.
+
+**Parameters:**
+- `aspect_ratio`: "match_input_image", "1:1", … , "custom" (default: "1:1")
+- `resolution`: "match_input_image", "0.5 MP", "1 MP", "2 MP", "4 MP" (default: "1 MP")
+- `width` / `height`: 256-2048, rounded to a multiple of 16, only read when
+  `aspect_ratio` is "custom". They replace `resolution`, which is not sent then
+- `output_format`: "webp", "jpg", "png" (default: "webp")
+- `output_quality`: 0-100 (default: 80), ignored for png
+- `safety_tolerance`: 1-5 (default: 2), 1 being the strictest
+- `seed`: integer (optional)
+- Flex only — `steps`: 1-50 (default: 20), `guidance`: 1-10 (default: 3.5),
+  `prompt_upsampling`: boolean (default: false)
+
+**Input Images:** Flex takes up to 10, Pro and Max up to 8. The payload key is
+`input_images`, not `image_input`
+
+#### p-image-upscale (PrunaAI)
+
+An upscaler rather than a generator. It rewrites the image it is given, so it
+declares `requiresPrompt: false` and the Image Generator node hides its prompt
+textarea and its prompt input port while this model is selected.
+
+**Parameters:**
+- `target`: 1-8 megapixels (default: 4)
+- `enhance_realism`: boolean (default: true) - Recommended for AI generated images
+- `enhance_details`: boolean (default: false)
+- `output_format`: "jpg", "png", "webp" (default: "jpg")
+- `output_quality`: 0-100 (default: 80), ignored for png
+- `disable_safety_checker`: boolean (default: false)
+
+`upscale_mode` is fixed at `"target"` in `defaults` and read from there, and
+`factor` is never sent: the node offers a target resolution, which is the mode
+that reads it. `no_op` is deprecated and ignored by the model.
+
+**Input Images:** Exactly one, sent as `image` (a plain string, not an array).
+Any extra connected image is ignored
+
 ### Text Generation Models
 
 #### GPT-5 (OpenAI)

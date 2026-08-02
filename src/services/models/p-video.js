@@ -60,12 +60,41 @@ export const P_VIDEO = {
         type: 'select',
         enum: [24, 48],
         default: 24
-      },
+      }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
       {
         key: 'draft',
-        label: 'Draft',
+        label: 'Draft mode',
         type: 'checkbox',
-        default: false
+        default: false,
+        description: 'Lower quality preview, around 4x faster and cheaper. Handy while iterating on a prompt'
+      },
+      {
+        key: 'prompt_upsampling',
+        label: 'Prompt upsampling',
+        type: 'checkbox',
+        default: true,
+        description: 'Let the model rewrite the prompt to enhance it'
+      },
+      {
+        key: 'save_audio',
+        label: 'Save audio',
+        type: 'checkbox',
+        default: true,
+        description: 'Keep the generated audio track in the video'
+      },
+      {
+        key: 'seed',
+        label: 'Seed',
+        type: 'number',
+        default: null,
+        placeholder: 'Random',
+        description: 'Fix it to reproduce the same generation twice'
       }
     ]
   },

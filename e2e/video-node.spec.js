@@ -132,10 +132,15 @@ test.describe('Video Generator Node', () => {
     await page.locator('#control-aspect_ratio').selectOption('9:16')
     await page.locator('#control-resolution').selectOption('1080p')
     await page.locator('#control-fps').selectOption('48')
-    await page.locator('#control-draft').check()
 
-    // Click away to dismiss the toolbar before using the node body
+    // Draft is a secondary option, so it lives in the side panel
+    await page.locator('button[title="More options"]').click()
+    await page.locator('#panel-control-draft').check()
+
+    // Click away to dismiss the toolbar before using the node body. It also
+    // deselects the node, which is what closes the panel
     await page.mouse.click(10, 10)
+    await expect(page.locator('.node-options-panel')).toBeHidden()
 
     await videoNode.locator('textarea').fill('a vertical clip of falling confetti')
     await videoNode.getByRole('button', { name: 'Generate Video' }).click()

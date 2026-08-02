@@ -27,7 +27,12 @@ flora/
 │   │   │   ├── FloatingMenu.vue      # Left sidebar menu with actions
 │   │   │   ├── NodesSidebar.vue      # Draggable nodes list
 │   │   │   ├── NodeContextMenu.vue   # Right-click menu on a node (batch marks)
+│   │   │   ├── NodeOptionsPanel.vue  # Side panel with the extra model options
 │   │   │   └── SettingsModal.vue     # Settings configuration modal
+│   │   ├── ui/
+│   │   │   ├── BaseModal.vue         # Centred modal dialog
+│   │   │   ├── BaseSidePanel.vue     # Panel docked to the right edge
+│   │   │   └── ModelControl.vue      # One uiSchema control, label over field
 │   │   ├── batch/
 │   │   │   └── BatchRunModal.vue     # Batch Run panel
 │   │   └── nodes/
@@ -44,6 +49,8 @@ flora/
 │   │   ├── useNodeCreation.js        # Node creation helpers
 │   │   ├── useDragAndDrop.js         # Drag & drop logic
 │   │   ├── useGroupManagement.js     # Group/ungroup operations
+│   │   ├── useAutoLayout.js          # Arrange the canvas by dependency
+│   │   ├── useSidePanel.js           # Which side panel the canvas is showing
 │   │   └── useKeyboardShortcuts.js   # Global keyboard shortcuts
 │   ├── views/
 │   │   └── FlowCanvasView.vue        # Main app canvas (~177 lines)
@@ -56,6 +63,8 @@ flora/
 │   │   ├── node-registry.js          # Node component registry
 │   │   ├── connection.js             # Connection validation
 │   │   ├── flow-io.js                # Flow export/import
+│   │   ├── group-membership.js       # Which nodes belong to a group
+│   │   ├── auto-layout.js            # Dependency based node arrangement
 │   │   ├── batch-io.js               # Batch input/output roles and IO
 │   │   ├── prompt-template.js        # Shared {{VARIABLE}} handling
 │   │   └── zip.js                    # ZIP writer for batch results
@@ -114,6 +123,7 @@ User interacts with Canvas
 - `FloatingMenu.vue` - Left sidebar with action buttons
 - `NodesSidebar.vue` - Draggable nodes list
 - `SettingsModal.vue` - Settings configuration
+- `NodeOptionsPanel.vue` - Right side panel with the extra options of a node's model
 
 **Composables used:**
 ```javascript
@@ -129,7 +139,11 @@ const { createNodeAtPosition } = useNodeCreation(flowStore)
 // Complex composables
 const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
-useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore })
+const { handleAutoLayout, undoAutoLayout, canUndoLayout } = useAutoLayout(flowStore, { applyNodeChanges, fitView })
+useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, canUndoLayout, copiedNodes, flowStore })
+
+// Side panels, opened from anywhere (a node toolbar, a menu, …)
+const { activePanel } = useSidePanel()
 ```
 
 **Features:**
@@ -140,6 +154,8 @@ useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowSt
 - Viewport controls (lock, fit view)
 - Copy/paste the selection, keeping its layout and input connections (Ctrl+C, Ctrl+V)
 - Group nodes (Ctrl+G)
+- Auto layout: arrange every node by dependency, undoable with Ctrl+Z (beta, off by default)
+- Node options side panel, opened from the ⋮ button in a node toolbar
 - Settings modal
 - Automatic group management
 
@@ -351,6 +367,82 @@ export function useNodeCreation(flowStore) {
 }
 ```
 
+**useAutoLayout.js** - Arrange the canvas by dependency
+```javascript
+export function useAutoLayout(flowStore, { applyNodeChanges, fitView }) {
+  const snapshot = ref(null)  // positions and group sizes before the last layout
+
+  async function handleAutoLayout() { /* ... */ }
+  async function undoAutoLayout() { /* ... */ }
+
+  return { canUndoLayout, handleAutoLayout, undoAutoLayout }
+}
+```
+The feature is in beta: the button only shows up once **Settings → Beta → Auto Layout**
+is enabled, which is what `FloatingMenu` reads through its `showAutoLayout` prop.
+
+The arrangement itself lives in `src/lib/auto-layout.js`, which is pure and takes no
+Vue dependency. Columns come from the `levels` of `topologicalSort()`: that layering
+already places a node right after its last dependency, which is exactly its column in a
+left to right layout. Within a column the order is seeded with the Y the user is already
+looking at and then refined with barycenter sweeps over ranks, never pixels — node
+heights span 150 to 700px and a pixel barycenter swings with them instead of with the
+topology.
+
+Groups are collapsed into single items. The content of each group is arranged first,
+because the resulting box is the slot the outer layout has to reserve for it, padding
+and minimum size included. Whether that content is arranged at all is up to the
+**Arrange the content of groups** setting: with it off, which is the default, a group
+keeps its size and its children keep their positions relative to it, and only the box
+itself is moved. Edges are redrawn between the blocks that actually get
+placed, so an edge in or out of a group becomes an edge of the group itself. That
+collapsing can turn an acyclic flow into a cyclic one (a node outside a group sitting
+between two of its children), and nothing in the app forbids a real cycle either, so a
+DFS drops the back edges before layering — for the layout only, the flow keeps them.
+
+Two invariants hold the result together. Every box the layout places is disjoint from
+the others, which is what keeps `syncGroupMembership()` from adopting a node that only
+looks like it belongs to a group. And the arrangement is idempotent: running it twice
+changes nothing, since the seed is the current Y and the result is anchored on the
+top-left corner the canvas already occupied.
+
+Comment nodes are annotations rather than part of the flow, so a loose one keeps its
+place; it is only nudged if a group happened to land on top of it. Comments inside a
+group are arranged with the rest of its content. Since the repo has no history and a
+layout discards every manual placement, the composable keeps a one step snapshot that
+`Ctrl+Z` restores.
+
+**useSidePanel.js** - Which side panel the canvas is showing
+```javascript
+export const PANEL_TYPES = { NODE_OPTIONS: 'node-options' }
+
+export function useSidePanel() {
+  return { activePanel, isPanelOpen, openPanel, closePanel, closePanelOfType }
+}
+```
+The state lives at module level, not inside the function. What opens a panel is usually a
+button several components deep inside VueFlow, while the panel itself is rendered by
+`FlowCanvasView`; the same trick the workflow event bus uses to let a node talk to the
+canvas without prop drilling. One panel at a time: opening another replaces it.
+
+`BaseSidePanel.vue` is the shell, docked to the right edge over the full height. It is
+deliberately not a `BaseModal` variant, because it has no overlay: a panel that tracks the
+selection needs the canvas to stay interactive, or the user could never deselect while it
+is up. It sits at `z-index: 900`, below modals, so Settings still opens on top of it.
+
+`NodeOptionsPanel.vue` is the only content so far. A node toolbar is a single row and
+stops scaling past a handful of controls, so every model splits its `uiSchema` in two:
+`controls` for the toolbar and `advancedControls` for the panel. Both are the same
+descriptor shape and both write to `data.params`, so nothing about serialization or the
+API payload changes. The ⋮ button only appears when the current model declares advanced
+controls. What is deliberately *not* there is anything that asks for more than one image:
+see [One image per generation](#one-image-per-generation).
+
+The panel reads its node through VueFlow's `findNode`, not through the store: `selected`
+is only kept up to date on VueFlow's own node objects, and the panel lives and dies by it.
+A watch on the selection closes the panel when the node is deselected, replaced by another
+selection, or deleted.
+
 ### Complex Composables
 
 **useDragAndDrop.js** - Drag & drop logic for nodes and images
@@ -376,6 +468,21 @@ export function useGroupManagement(flowStore, onNodeDragStop) {
   return { handleGroup }
 }
 ```
+A selected group shows a **Play group** button in its `NodeToolbar`. It calls
+`executeWorkflow({ forceRerun: true, nodeIds })` with the ids of its children,
+and `getExecutableNodes()` narrows the run to that set: nodes outside the group
+are never re-run and feed the group with the output they already hold. The main
+Play button passes no `nodeIds`, so it keeps running the whole canvas and stays
+blind to groups.
+
+Membership follows a single rule, implemented in `src/lib/group-membership.js`:
+a node belongs to a group when its center sits inside the group rectangle. It is
+applied whenever the geometry changes — a node is dropped, a group is moved, or
+a group is resized (`GroupNode.vue` syncs on `resize-end`) — so a node that
+looks like it is inside a group really is its child, and vice versa. Children
+store positions relative to their parent, which is why resizing from the top or
+left handles shifts them back by the same amount the group origin moved:
+otherwise the whole content would drift along with the handle.
 
 **useKeyboardShortcuts.js** - Global keyboard shortcuts
 ```javascript
@@ -425,13 +532,21 @@ The settings store (`useSettingsStore`) maintains app configuration:
 
 ```javascript
 {
-  showNodeHeaders: ref(false),  // Show/hide node headers
+  showNodeHeaders: ref(false),           // Show/hide node headers
+  skipSaveDialog: ref(false),            // Export with the default filename
+  betaAutoLayout: ref(false),            // Show the Auto Layout button
+  autoLayoutGroupContents: ref(false),   // Let the auto layout rearrange groups inside
 
   // Actions
   toggleNodeHeaders(),
-  setNodeHeaders(value)
+  setNodeHeaders(value),
+  setSkipSaveDialog(value),
+  setBetaAutoLayout(value),
+  setAutoLayoutGroupContents(value)
 }
 ```
+Everything here is persisted to `localStorage` under `flora-settings`, API keys
+included.
 
 ### Why so simple?
 
@@ -574,13 +689,80 @@ const result = await replicateService.generateImage({
 ```
 
 **Configured models:**
-- `nano-banana-pro` - Fast model
-- `seedream-4` - Advanced model with more options
+
+| Model | Category | Notes |
+|---|---|---|
+| `nano-banana-pro` | image | The default model |
+| `nano-banana-2` | image | Flash speed, optional web and image search grounding |
+| `seedream-4` | image | Custom dimensions through `size: 'custom'` |
+| `seedream-4.5` | image | Same, minus the 1K size |
+| `seedream-5-lite` | image | 2K/3K only, no custom dimensions |
+| `flux-2-flex` | image | Adds `steps` and `guidance` over the other two FLUX |
+| `flux-2-pro` | image | Up to 8 reference images |
+| `flux-2-max` | image | Highest fidelity of the FLUX family |
+| `gpt-image-1`, `gpt-image-2` | image | Need an OpenAI key for gpt-image-1 |
+| `p-image-upscale` | image | Upscaler: takes no prompt, needs one input image |
+| `lang-segment-anything` | image | Segmentation, no prompt-driven generation |
+| `gpt-5`, `gemini-2.5-flash` | text | |
+| `p-video` | video | |
+
+A model is picked up by the Image Generator's dropdown as soon as it is added to the
+`MODELS` registry with `category: 'image'` — the list comes from `listModels(category)`,
+so there is nothing to register on the component side.
 
 Each model defines:
 - Accepted parameters
 - Default values
-- UI Schema for toolbar (dynamic controls)
+- UI Schema, split into `controls` for the node toolbar and `advancedControls` for the
+  node options side panel
+
+Two payload shapes coexist and are not interchangeable: the Google and ByteDance models
+take their reference images in `image_input`, while the FLUX and gpt-image ones take them
+in `input_images`. Each `buildInput` maps the node's images onto its own key.
+
+The FLUX models also swap parameters depending on the aspect ratio: `custom` sends `width`
+and `height` and omits `resolution`, anything else sends `resolution` and omits the
+dimensions. The panel shows all three at once because the model, not the UI, decides which
+ones matter.
+
+### Models without a prompt
+
+A model config can declare `requiresPrompt: false`. `p-image-upscale` is the first one:
+it rewrites the image it is handed, so there is nothing for the user to describe.
+
+The flag is read in two places, and nowhere else:
+
+- `generateImage()` in `replicate.js` skips the "Prompt is required" guard for it
+- `ImageGeneratorNode.vue` computes `requiresPrompt` from it and drops the prompt textarea,
+  the connected-prompt preview and the `prompt` entry of `:inputs` — which is what makes
+  the input handle disappear
+
+Taking a handle away leaves any edge that landed on it pointing at nothing, so
+`onModelChange` removes the incoming prompt edges when it switches to a model that declares
+the flag. Handles are indexed by position (`input-0`, `input-1`), and `prompt` is the last
+one, so removing it does not renumber the image port and existing image edges survive.
+
+The node type's static IO config in `node-shapes.js` is left alone: it still declares both
+ports, which is what `connection.js` validates against. The flag hides a port, it does not
+redefine the node.
+
+### One image per generation
+
+Several models can return a batch of images in a single prediction: `number_of_images` on
+the gpt-image models, `max_images` together with `sequential_image_generation` on
+seedream-4, seedream-4.5 and seedream-5-lite. **None of them is exposed in the UI, and
+`buildInput` always asks for exactly one image**, ignoring whatever a flow's `data.params`
+might carry.
+
+An Image Generator node renders a single output and reads `imageUrl`, the first entry of
+the response. Every extra image was billed and then dropped on the floor, which is a
+silent cost for something the user could not see. Fixing the value at 1 in `defaults`, and
+reading it from there rather than from `params`, is what keeps an imported JSON from
+re-enabling it behind the user's back.
+
+Should the canvas ever grow a node that can hold several images, the way back is to expose
+the parameter again and consume `imageUrls` / `allOutputs`, which the model configs already
+return from `parseResponse`.
 
 ---
 

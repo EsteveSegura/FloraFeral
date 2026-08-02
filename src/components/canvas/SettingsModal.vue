@@ -37,6 +37,38 @@
         </div>
       </div>
 
+      <!-- Beta Section -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Beta</h3>
+        <div class="settings-option">
+          <BaseCheckbox
+            id="beta-auto-layout"
+            v-model="settingsStore.betaAutoLayout"
+            label="Auto Layout"
+          />
+          <p class="settings-option-description">
+            Show the Auto Layout button, which rearranges every node by dependency.
+            Still in beta, so it is hidden until you turn it on
+          </p>
+        </div>
+      </div>
+
+      <!-- Auto Layout Section, only worth showing once the beta is on -->
+      <div v-if="settingsStore.betaAutoLayout" class="settings-section">
+        <h3 class="settings-section-title">Auto Layout</h3>
+        <div class="settings-option">
+          <BaseCheckbox
+            id="auto-layout-group-contents"
+            v-model="settingsStore.autoLayoutGroupContents"
+            label="Arrange the content of groups"
+          />
+          <p class="settings-option-description">
+            Rearrange the nodes inside each group too, and resize the group to fit them.
+            Off by default: only the group as a whole is moved
+          </p>
+        </div>
+      </div>
+
       <!-- API Keys Section -->
       <div class="settings-section">
         <h3 class="settings-section-title">API Keys</h3>

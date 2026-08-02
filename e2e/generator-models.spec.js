@@ -44,7 +44,8 @@ test.describe('Generator Model Selection', () => {
   })
 
   test('Image → ImageGenerator with Seedream-4', async ({ page }) => {
-    await mockSeedream4(page)
+    let received = null
+    await mockSeedream4(page, { assertRequest: (body) => { received = body.input } })
 
     await setupBlankCanvas(page)
     await addNodeFromSidebar(page, 'Image')
@@ -74,10 +75,15 @@ test.describe('Generator Model Selection', () => {
 
     await expect(imageGenNode.locator('.image-preview img')).toBeVisible({ timeout: 15000 })
     await expect(imageGenNode.locator('.image-preview img')).toHaveAttribute('src', FAKE_GENERATED_IMAGE)
+
+    // The node shows one image, so it must never pay for a batch
+    expect(received.max_images).toBe(1)
+    expect(received.sequential_image_generation).toBe('disabled')
   })
 
   test('Prompt → ImageGenerator with GPT Image 1', async ({ page }) => {
-    await mockGptImage1(page)
+    let received = null
+    await mockGptImage1(page, { assertRequest: (body) => { received = body.input } })
 
     await setupBlankCanvas(page)
     await addNodeFromSidebar(page, 'Prompt')
@@ -111,5 +117,33 @@ test.describe('Generator Model Selection', () => {
 
     await expect(imageGenNode.locator('.image-preview img')).toBeVisible({ timeout: 15000 })
     await expect(imageGenNode.locator('.image-preview img')).toHaveAttribute('src', FAKE_GENERATED_IMAGE)
+
+    // The node shows one image, so it must never pay for a batch
+    expect(received.number_of_images).toBe(1)
+  })
+
+  test('a saved flow cannot ask for more than one image', async ({ page }) => {
+    let received = null
+    await mockGptImage1(page, { assertRequest: (body) => { received = body.input } })
+
+    await setupBlankCanvas(page)
+    await addNodeFromSidebar(page, 'Image Generator')
+
+    const imageGenNode = page.locator('.vue-flow__node-image-generator')
+    await positionNodes(page, [{ type: 'image-generator', x: 300, y: 200 }])
+    await selectModel(page, imageGenNode, 'gpt-image-1')
+
+    // A JSON written before the option was pulled, or edited by hand
+    await page.evaluate(() => {
+      const pinia = document.querySelector('#app').__vue_app__.config.globalProperties.$pinia
+      const node = pinia._s.get('flow').nodes.find(n => n.type === 'image-generator')
+      node.data.params = { ...node.data.params, number_of_images: 5 }
+    })
+
+    await imageGenNode.locator('textarea').fill('a golden sunset over the ocean')
+    await imageGenNode.getByRole('button', { name: 'Generate Image' }).click()
+
+    await expect(imageGenNode.locator('.image-preview img')).toBeVisible({ timeout: 15000 })
+    expect(received.number_of_images).toBe(1)
   })
 })

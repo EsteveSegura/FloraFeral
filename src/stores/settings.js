@@ -40,6 +40,13 @@ export const useSettingsStore = defineStore('settings', () => {
   const showNodeHeaders = ref(persisted.showNodeHeaders ?? false)
   const skipSaveDialog = ref(persisted.skipSaveDialog ?? false)
 
+  // Beta features, hidden until the user opts in
+  const betaAutoLayout = ref(persisted.betaAutoLayout ?? false)
+
+  // Off by default: a group is usually arranged the way its author wanted, and
+  // the auto layout only moves the box around
+  const autoLayoutGroupContents = ref(persisted.autoLayoutGroupContents ?? false)
+
   // API Keys Settings
   const replicateApiKey = ref(persisted.replicateApiKey ?? '')
   const openaiApiKey = ref(persisted.openaiApiKey ?? '')
@@ -49,6 +56,8 @@ export const useSettingsStore = defineStore('settings', () => {
     () => ({
       showNodeHeaders: showNodeHeaders.value,
       skipSaveDialog: skipSaveDialog.value,
+      betaAutoLayout: betaAutoLayout.value,
+      autoLayoutGroupContents: autoLayoutGroupContents.value,
       replicateApiKey: replicateApiKey.value,
       openaiApiKey: openaiApiKey.value
     }),
@@ -69,6 +78,14 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setSkipSaveDialog(value) {
     skipSaveDialog.value = value
+  }
+
+  function setBetaAutoLayout(value) {
+    betaAutoLayout.value = value
+  }
+
+  function setAutoLayoutGroupContents(value) {
+    autoLayoutGroupContents.value = value
   }
 
   // API Keys Actions
@@ -106,6 +123,8 @@ export const useSettingsStore = defineStore('settings', () => {
     // State
     showNodeHeaders,
     skipSaveDialog,
+    betaAutoLayout,
+    autoLayoutGroupContents,
     replicateApiKey,
     openaiApiKey,
 
@@ -113,6 +132,8 @@ export const useSettingsStore = defineStore('settings', () => {
     toggleNodeHeaders,
     setNodeHeaders,
     setSkipSaveDialog,
+    setBetaAutoLayout,
+    setAutoLayoutGroupContents,
     setReplicateApiKey,
     setOpenaiApiKey,
     getReplicateApiKey,

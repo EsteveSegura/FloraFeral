@@ -15,6 +15,10 @@ export const GPT_IMAGE_2 = {
 
   /**
    * Default parameters for the model
+   *
+   * `number_of_images` is fixed at 1 and is not exposed anywhere in the UI: an
+   * Image Generator node renders a single output, so any extra image would be
+   * billed and then dropped on the floor
    */
   defaults: {
     aspect_ratio: '1:1',
@@ -49,18 +53,50 @@ export const GPT_IMAGE_2 = {
         default: 'auto'
       },
       {
-        key: 'background',
-        label: 'Background',
-        type: 'select',
-        enum: ['auto', 'transparent', 'opaque'],
-        default: 'auto'
-      },
-      {
         key: 'output_format',
         label: 'Output Format',
         type: 'select',
         enum: ['webp', 'png', 'jpeg'],
         default: 'webp'
+      }
+    ],
+
+    /**
+     * Secondary options, rendered in the node options side panel
+     */
+    advancedControls: [
+      {
+        key: 'background',
+        label: 'Background',
+        type: 'select',
+        enum: ['auto', 'transparent', 'opaque'],
+        default: 'auto',
+        description: 'A transparent background needs an output format that supports it'
+      },
+      {
+        key: 'output_compression',
+        label: 'Output compression',
+        type: 'number',
+        min: 0,
+        max: 100,
+        default: 90,
+        description: 'Compression level as a percentage'
+      },
+      {
+        key: 'moderation',
+        label: 'Moderation',
+        type: 'select',
+        enum: ['auto', 'low'],
+        default: 'auto',
+        description: 'Content moderation level applied by OpenAI'
+      },
+      {
+        key: 'user_id',
+        label: 'User id',
+        type: 'text',
+        default: '',
+        placeholder: 'Optional',
+        description: 'Identifier for your end user, so OpenAI can trace abuse back to them'
       }
     ]
   },
@@ -94,7 +130,8 @@ export const GPT_IMAGE_2 = {
     const input = {
       prompt: prompt.trim(),
       aspect_ratio: params.aspect_ratio || this.defaults.aspect_ratio,
-      number_of_images: params.number_of_images || this.defaults.number_of_images,
+      // Always 1: the node has room for a single image, see `defaults`
+      number_of_images: this.defaults.number_of_images,
       quality: params.quality || this.defaults.quality,
       background: params.background || this.defaults.background,
       output_compression: params.output_compression || this.defaults.output_compression,
@@ -152,14 +189,6 @@ export const GPT_IMAGE_2 = {
       throw new Error(`Invalid output_format. Must be one of: ${this.validValues.output_format.join(', ')}`)
     }
 
-    if (params.number_of_images !== undefined) {
-      const num = parseInt(params.number_of_images)
-      if (isNaN(num) || num < 1 || num > 10) {
-        throw new Error('number_of_images must be between 1 and 10')
-      }
-      validated.number_of_images = num
-    }
-
     if (params.output_compression !== undefined) {
       const comp = parseInt(params.output_compression)
       if (isNaN(comp) || comp < 0 || comp > 100) {
@@ -174,7 +203,7 @@ export const GPT_IMAGE_2 = {
       background: params.background,
       moderation: params.moderation,
       output_format: params.output_format,
-      number_of_images: validated.number_of_images,
+      // number_of_images is deliberately dropped: buildInput always sends 1
       output_compression: validated.output_compression,
       user_id: params.user_id
     }

@@ -1,15 +1,15 @@
 /**
- * ByteDance SeeDream-4 Model Configuration
- * Model: bytedance/seedream-4
+ * ByteDance SeeDream-4.5 Model Configuration
+ * Model: bytedance/seedream-4.5
  */
 
-export const SEEDREAM_4 = {
-  id: 'seedream-4',
-  name: 'SeeDream-4',
+export const SEEDREAM_4_5 = {
+  id: 'seedream-4.5',
+  name: 'SeeDream-4.5',
   owner: 'bytedance',
   version: 'latest',
   category: 'image', // Model category: image generation
-  endpointPath: '/v1/models/bytedance/seedream-4/predictions',
+  endpointPath: '/v1/models/bytedance/seedream-4.5/predictions',
 
   /**
    * Default parameters for the model
@@ -23,24 +23,25 @@ export const SEEDREAM_4 = {
     aspect_ratio: 'match_input_image',
     width: 2048,
     height: 2048,
-    enhance_prompt: true,
+    disable_safety_checker: false,
     max_images: 1,
     sequential_image_generation: 'disabled'
   },
 
   /**
-   * UI Schema - defines controls for the navbar
+   * UI Schema - defines controls for the node toolbar
    * Used to dynamically render UI controls for model parameters
    */
   uiSchema: {
-    id: 'seedream-4',
-    label: 'SeeDream-4',
+    id: 'seedream-4.5',
+    label: 'SeeDream-4.5',
     controls: [
       {
         key: 'size',
         label: 'Size',
         type: 'select',
-        enum: ['1K', '2K', '4K', 'custom'],
+        // 1K is not supported by this version, unlike SeeDream-4
+        enum: ['2K', '4K', 'custom'],
         default: '2K'
       },
       {
@@ -61,13 +62,6 @@ export const SEEDREAM_4 = {
      */
     advancedControls: [
       {
-        key: 'enhance_prompt',
-        label: 'Enhance prompt',
-        type: 'checkbox',
-        default: true,
-        description: 'Higher quality results, at the cost of a slower generation'
-      },
-      {
         key: 'width',
         label: 'Custom width',
         type: 'number',
@@ -84,6 +78,13 @@ export const SEEDREAM_4 = {
         max: 4096,
         default: 2048,
         description: 'Only used when Size is set to custom'
+      },
+      {
+        key: 'disable_safety_checker',
+        label: 'Disable safety checker',
+        type: 'checkbox',
+        default: false,
+        description: 'Relaxes moderation down to illegal content only. Use responsibly'
       }
     ]
   },
@@ -92,7 +93,7 @@ export const SEEDREAM_4 = {
    * Valid values for each parameter
    */
   validValues: {
-    size: ['1K', '2K', '4K', 'custom'],
+    size: ['2K', '4K', 'custom'],
     aspect_ratio: [
       'match_input_image',
       '1:1', '4:3', '3:4', '16:9', '9:16',
@@ -104,7 +105,7 @@ export const SEEDREAM_4 = {
    * Build input payload for the API
    * @param {Object} options
    * @param {string} options.prompt - Text description
-   * @param {Array<string>} [options.imageInput] - Input images (up to 10)
+   * @param {Array<string>} [options.imageInput] - Input images (up to 14)
    * @param {Object} [options.params] - Additional parameters
    * @returns {Object} API input payload
    */
@@ -115,8 +116,8 @@ export const SEEDREAM_4 = {
       throw new Error('Prompt is required and must be a non-empty string')
     }
 
-    if (imageInput.length > 10) {
-      throw new Error('Maximum 10 input images are supported')
+    if (imageInput.length > 14) {
+      throw new Error('Maximum 14 input images are supported')
     }
 
     const input = {
@@ -124,7 +125,9 @@ export const SEEDREAM_4 = {
       image_input: imageInput,
       size: params.size || this.defaults.size,
       aspect_ratio: params.aspect_ratio || this.defaults.aspect_ratio,
-      enhance_prompt: params.enhance_prompt !== undefined ? params.enhance_prompt : this.defaults.enhance_prompt,
+      disable_safety_checker: params.disable_safety_checker !== undefined
+        ? params.disable_safety_checker
+        : this.defaults.disable_safety_checker,
       // Always a single image, see `defaults`
       max_images: this.defaults.max_images,
       sequential_image_generation: this.defaults.sequential_image_generation
@@ -174,9 +177,9 @@ export const SEEDREAM_4 = {
     return {
       size: params.size,
       aspect_ratio: params.aspect_ratio,
-      enhance_prompt: params.enhance_prompt,
       width: validated.width,
       height: validated.height,
+      disable_safety_checker: params.disable_safety_checker
       // max_images and sequential_image_generation are deliberately dropped:
       // buildInput always asks for a single image
     }
@@ -192,7 +195,7 @@ export const SEEDREAM_4 = {
       throw new Error('No output in response')
     }
 
-    // The output can be a single URL or an array of URLs
+    // The output is an array of URLs, but tolerate a single string
     const imageUrl = Array.isArray(response.output)
       ? response.output[0]
       : response.output
@@ -201,10 +204,9 @@ export const SEEDREAM_4 = {
       imageUrl,
       id: response.id,
       status: response.status,
-      model: this.id,
-      allOutputs: Array.isArray(response.output) ? response.output : [response.output]
+      model: this.id
     }
   }
 }
 
-export default SEEDREAM_4
+export default SEEDREAM_4_5

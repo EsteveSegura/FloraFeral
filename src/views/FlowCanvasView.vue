@@ -15,12 +15,14 @@
         ref="floatingMenu"
         :is-locked="isLocked"
         :is-nodes-menu-open="isNodesMenuOpen"
+        :show-auto-layout="settingsStore.betaAutoLayout"
         @toggle-nodes="toggleNodesMenu"
         @export="onExportClick"
         @import="handleImport"
         @open-batch="isBatchModalOpen = true"
         @lock-toggle="handleLockToggle"
         @fit-view="handleFitView"
+        @auto-layout="handleAutoLayout"
         @open-settings="isSettingsModalOpen = true"
       />
 
@@ -77,6 +79,13 @@
       </VueFlow>
     </div>
 
+    <!-- Side panels, invoked from anywhere through useSidePanel -->
+    <NodeOptionsPanel
+      v-if="activePanel?.type === PANEL_TYPES.NODE_OPTIONS"
+      :key="activePanel.nodeId"
+      :node-id="activePanel.nodeId"
+    />
+
     <!-- Intro Modal -->
     <IntroModal v-model="showIntro" />
 
@@ -116,6 +125,7 @@ import FloatingMenu from '@/components/canvas/FloatingMenu.vue'
 import NodesSidebar from '@/components/canvas/NodesSidebar.vue'
 import NodeContextMenu from '@/components/canvas/NodeContextMenu.vue'
 import SettingsModal from '@/components/canvas/SettingsModal.vue'
+import NodeOptionsPanel from '@/components/canvas/NodeOptionsPanel.vue'
 import IntroModal from '@/components/canvas/IntroModal.vue'
 import AlertBanner from '@/components/canvas/AlertBanner.vue'
 import SaveDialog from '@/components/canvas/SaveDialog.vue'
@@ -128,12 +138,17 @@ import { useCopyPaste } from '@/composables/useCopyPaste'
 import { useNodeCreation } from '@/composables/useNodeCreation'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { useGroupManagement } from '@/composables/useGroupManagement'
+import { useAutoLayout } from '@/composables/useAutoLayout'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useConnectionDrop } from '@/composables/useConnectionDrop'
+import { useSidePanel, PANEL_TYPES } from '@/composables/useSidePanel'
 
 const flowStore = useFlowStore()
 const settingsStore = useSettingsStore()
+
+// Which side panel is on screen, if any. Nodes open theirs from their toolbar
+const { activePanel } = useSidePanel()
 
 const isNodesMenuOpen = ref(false)
 const mousePosition = ref({ x: 0, y: 0 })
@@ -152,7 +167,7 @@ const showIntro = ref(false)
 const showAlert = computed(() => !settingsStore.getReplicateApiKey())
 
 // VueFlow composable
-const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
+const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
 
 // Use composables
 const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })
@@ -217,6 +232,7 @@ const {
 } = useConnectionDrop(flowStore, createNodeAtPosition, screenToFlowCoordinate, { addEdges }, openNodesMenuAt, closeMenu)
 const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, closeNodesMenu, menuOrigin)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
+const { handleAutoLayout, undoAutoLayout, canUndoLayout } = useAutoLayout(flowStore, { applyNodeChanges, fitView })
 
 // Register right-click handlers for context menus
 onPaneContextMenu(handlePaneContextMenu)
@@ -252,7 +268,7 @@ function onRenameConfirm(label) {
 }
 
 // Setup keyboard shortcuts
-useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, copiedNodes, flowStore })
+useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, canUndoLayout, copiedNodes, flowStore })
 
 // Register connection handler - use addEdges directly
 onConnect((params) => {

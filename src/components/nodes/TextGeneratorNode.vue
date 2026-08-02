@@ -62,6 +62,18 @@
             @change="onParamChange(control.key, $event.target.checked)"
           />
         </div>
+
+        <!-- The toolbar is one row and does not scale past a handful of
+             controls, so the rest of the model options live in a side panel -->
+        <button
+          v-if="advancedControls.length"
+          class="toolbar-more"
+          type="button"
+          title="More options"
+          @click="openPanel(PANEL_TYPES.NODE_OPTIONS, { nodeId: id })"
+        >
+          ⋮
+        </button>
       </div>
     </NodeToolbar>
 
@@ -160,6 +172,7 @@ import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
 import nodeRegistry from '@/lib/node-registry'
 import { useWorkflowEvents } from '@/composables/useWorkflowEvents'
+import { useSidePanel, PANEL_TYPES } from '@/composables/useSidePanel'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -193,6 +206,14 @@ const controls = computed(() => {
   const uiSchema = replicateService.getModelUiSchema(currentModel.value)
   return uiSchema ? uiSchema.controls : []
 })
+
+// Model options that go to the side panel instead of the toolbar
+const advancedControls = computed(() => {
+  const uiSchema = replicateService.getModelUiSchema(currentModel.value)
+  return uiSchema?.advancedControls || []
+})
+
+const { openPanel } = useSidePanel()
 
 // Get connected images from incoming edges (uses PORT_TYPE)
 const connectedImages = computed(() => {
@@ -343,6 +364,31 @@ async function handleGenerate() {
   flex-direction: column;
   gap: var(--flora-space-1);
   min-width: 120px;
+}
+
+/* Pushed to the far right, and kept there even when the toolbar wraps */
+.toolbar-more {
+  margin-left: auto;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--flora-radius-md);
+  cursor: pointer;
+  font-size: var(--flora-font-size-lg);
+  line-height: 1;
+  color: var(--flora-color-text-secondary);
+  transition: all var(--flora-transition-fast);
+  padding: 0;
+}
+
+.toolbar-more:hover {
+  background: var(--flora-color-bg-secondary);
+  color: var(--flora-color-text-primary);
 }
 
 .text-generator-node-content {

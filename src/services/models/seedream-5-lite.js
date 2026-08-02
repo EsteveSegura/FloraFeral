@@ -1,15 +1,15 @@
 /**
- * ByteDance SeeDream-4 Model Configuration
- * Model: bytedance/seedream-4
+ * ByteDance SeeDream-5 Lite Model Configuration
+ * Model: bytedance/seedream-5-lite
  */
 
-export const SEEDREAM_4 = {
-  id: 'seedream-4',
-  name: 'SeeDream-4',
+export const SEEDREAM_5_LITE = {
+  id: 'seedream-5-lite',
+  name: 'SeeDream-5 Lite',
   owner: 'bytedance',
   version: 'latest',
   category: 'image', // Model category: image generation
-  endpointPath: '/v1/models/bytedance/seedream-4/predictions',
+  endpointPath: '/v1/models/bytedance/seedream-5-lite/predictions',
 
   /**
    * Default parameters for the model
@@ -19,30 +19,22 @@ export const SEEDREAM_4 = {
    * so any extra image would be billed and then dropped on the floor
    */
   defaults: {
-    size: '2K',
     aspect_ratio: 'match_input_image',
-    width: 2048,
-    height: 2048,
-    enhance_prompt: true,
+    size: '2K',
+    output_format: 'png',
+    return_byteplus_urls: false,
     max_images: 1,
     sequential_image_generation: 'disabled'
   },
 
   /**
-   * UI Schema - defines controls for the navbar
+   * UI Schema - defines controls for the node toolbar
    * Used to dynamically render UI controls for model parameters
    */
   uiSchema: {
-    id: 'seedream-4',
-    label: 'SeeDream-4',
+    id: 'seedream-5-lite',
+    label: 'SeeDream-5 Lite',
     controls: [
-      {
-        key: 'size',
-        label: 'Size',
-        type: 'select',
-        enum: ['1K', '2K', '4K', 'custom'],
-        default: '2K'
-      },
       {
         key: 'aspect_ratio',
         label: 'Aspect Ratio',
@@ -53,6 +45,13 @@ export const SEEDREAM_4 = {
           '3:2', '2:3', '21:9'
         ],
         default: 'match_input_image'
+      },
+      {
+        key: 'size',
+        label: 'Size',
+        type: 'select',
+        enum: ['2K', '3K'],
+        default: '2K'
       }
     ],
 
@@ -61,29 +60,18 @@ export const SEEDREAM_4 = {
      */
     advancedControls: [
       {
-        key: 'enhance_prompt',
-        label: 'Enhance prompt',
+        key: 'output_format',
+        label: 'Output format',
+        type: 'select',
+        enum: ['png', 'jpeg'],
+        default: 'png'
+      },
+      {
+        key: 'return_byteplus_urls',
+        label: 'Return BytePlus URLs',
         type: 'checkbox',
-        default: true,
-        description: 'Higher quality results, at the cost of a slower generation'
-      },
-      {
-        key: 'width',
-        label: 'Custom width',
-        type: 'number',
-        min: 1024,
-        max: 4096,
-        default: 2048,
-        description: 'Only used when Size is set to custom'
-      },
-      {
-        key: 'height',
-        label: 'Custom height',
-        type: 'number',
-        min: 1024,
-        max: 4096,
-        default: 2048,
-        description: 'Only used when Size is set to custom'
+        default: false,
+        description: 'Skips the download and hands back BytePlus URLs that expire in 24 hours'
       }
     ]
   },
@@ -92,19 +80,20 @@ export const SEEDREAM_4 = {
    * Valid values for each parameter
    */
   validValues: {
-    size: ['1K', '2K', '4K', 'custom'],
+    size: ['2K', '3K'],
     aspect_ratio: [
       'match_input_image',
       '1:1', '4:3', '3:4', '16:9', '9:16',
       '3:2', '2:3', '21:9'
-    ]
+    ],
+    output_format: ['png', 'jpeg']
   },
 
   /**
    * Build input payload for the API
    * @param {Object} options
    * @param {string} options.prompt - Text description
-   * @param {Array<string>} [options.imageInput] - Input images (up to 10)
+   * @param {Array<string>} [options.imageInput] - Input images (up to 14)
    * @param {Object} [options.params] - Additional parameters
    * @returns {Object} API input payload
    */
@@ -115,28 +104,23 @@ export const SEEDREAM_4 = {
       throw new Error('Prompt is required and must be a non-empty string')
     }
 
-    if (imageInput.length > 10) {
-      throw new Error('Maximum 10 input images are supported')
+    if (imageInput.length > 14) {
+      throw new Error('Maximum 14 input images are supported')
     }
 
-    const input = {
+    return {
       prompt: prompt.trim(),
       image_input: imageInput,
       size: params.size || this.defaults.size,
       aspect_ratio: params.aspect_ratio || this.defaults.aspect_ratio,
-      enhance_prompt: params.enhance_prompt !== undefined ? params.enhance_prompt : this.defaults.enhance_prompt,
+      output_format: params.output_format || this.defaults.output_format,
+      return_byteplus_urls: params.return_byteplus_urls !== undefined
+        ? params.return_byteplus_urls
+        : this.defaults.return_byteplus_urls,
       // Always a single image, see `defaults`
       max_images: this.defaults.max_images,
       sequential_image_generation: this.defaults.sequential_image_generation
     }
-
-    // Add width and height only if size is 'custom'
-    if (input.size === 'custom') {
-      input.width = params.width || this.defaults.width
-      input.height = params.height || this.defaults.height
-    }
-
-    return input
   },
 
   /**
@@ -145,8 +129,6 @@ export const SEEDREAM_4 = {
    * @returns {Object} Validated parameters
    */
   validateParams(params = {}) {
-    const validated = {}
-
     if (params.size && !this.validValues.size.includes(params.size)) {
       throw new Error(`Invalid size. Must be one of: ${this.validValues.size.join(', ')}`)
     }
@@ -155,28 +137,15 @@ export const SEEDREAM_4 = {
       throw new Error(`Invalid aspect_ratio. Must be one of: ${this.validValues.aspect_ratio.join(', ')}`)
     }
 
-    if (params.width !== undefined) {
-      const width = parseInt(params.width)
-      if (isNaN(width) || width < 1024 || width > 4096) {
-        throw new Error('Width must be between 1024 and 4096 pixels')
-      }
-      validated.width = width
-    }
-
-    if (params.height !== undefined) {
-      const height = parseInt(params.height)
-      if (isNaN(height) || height < 1024 || height > 4096) {
-        throw new Error('Height must be between 1024 and 4096 pixels')
-      }
-      validated.height = height
+    if (params.output_format && !this.validValues.output_format.includes(params.output_format)) {
+      throw new Error(`Invalid output_format. Must be one of: ${this.validValues.output_format.join(', ')}`)
     }
 
     return {
       size: params.size,
       aspect_ratio: params.aspect_ratio,
-      enhance_prompt: params.enhance_prompt,
-      width: validated.width,
-      height: validated.height,
+      output_format: params.output_format,
+      return_byteplus_urls: params.return_byteplus_urls
       // max_images and sequential_image_generation are deliberately dropped:
       // buildInput always asks for a single image
     }
@@ -192,7 +161,7 @@ export const SEEDREAM_4 = {
       throw new Error('No output in response')
     }
 
-    // The output can be a single URL or an array of URLs
+    // The output is an array of URLs, but tolerate a single string
     const imageUrl = Array.isArray(response.output)
       ? response.output[0]
       : response.output
@@ -201,10 +170,9 @@ export const SEEDREAM_4 = {
       imageUrl,
       id: response.id,
       status: response.status,
-      model: this.id,
-      allOutputs: Array.isArray(response.output) ? response.output : [response.output]
+      model: this.id
     }
   }
 }
 
-export default SEEDREAM_4
+export default SEEDREAM_5_LITE

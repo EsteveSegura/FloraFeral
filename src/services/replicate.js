@@ -4,7 +4,14 @@
  */
 
 import NANO_BANANA_PRO from './models/nano-banana-pro'
+import NANO_BANANA_2 from './models/nano-banana-2'
 import SEEDREAM_4 from './models/seedream-4'
+import SEEDREAM_4_5 from './models/seedream-4.5'
+import SEEDREAM_5_LITE from './models/seedream-5-lite'
+import FLUX_2_FLEX from './models/flux-2-flex'
+import FLUX_2_PRO from './models/flux-2-pro'
+import FLUX_2_MAX from './models/flux-2-max'
+import P_IMAGE_UPSCALE from './models/p-image-upscale'
 import LANG_SEGMENT_ANYTHING from './models/lang-segment-anything'
 import GPT_IMAGE_1 from './models/gpt-image-1'
 import GPT_IMAGE_2 from './models/gpt-image-2'
@@ -18,7 +25,14 @@ import { useSettingsStore } from '@/stores/settings'
  */
 const MODELS = {
   'nano-banana-pro': NANO_BANANA_PRO,
+  'nano-banana-2': NANO_BANANA_2,
   'seedream-4': SEEDREAM_4,
+  'seedream-4.5': SEEDREAM_4_5,
+  'seedream-5-lite': SEEDREAM_5_LITE,
+  'flux-2-flex': FLUX_2_FLEX,
+  'flux-2-pro': FLUX_2_PRO,
+  'flux-2-max': FLUX_2_MAX,
+  'p-image-upscale': P_IMAGE_UPSCALE,
   'lang-segment-anything': LANG_SEGMENT_ANYTHING,
   'gpt-image-1': GPT_IMAGE_1,
   'gpt-image-2': GPT_IMAGE_2,
@@ -224,13 +238,14 @@ class ReplicateService {
       params = {}
     } = options
 
-    // Validate inputs
-    if (!prompt) {
-      throw new Error('Prompt is required')
-    }
-
     // Get model configuration
     const model = this.getModel(modelId)
+
+    // An upscaler rewrites the image it is given, so it declares
+    // `requiresPrompt: false` and the node never asks for one
+    if (!prompt && model.requiresPrompt !== false) {
+      throw new Error('Prompt is required')
+    }
 
     // Prepare image input
     let imageInput = []
@@ -239,7 +254,7 @@ class ReplicateService {
     }
 
     console.log('Replicate service - preparing generation:')
-    console.log('  Prompt:', prompt.substring(0, 50) + '...')
+    console.log('  Prompt:', prompt ? prompt.substring(0, 50) + '...' : '(model takes no prompt)')
     console.log('  Image inputs:', imageInput.length, 'images')
     if (imageInput.length > 0) {
       console.log('  Image types:', imageInput.map(src => {
@@ -503,8 +518,8 @@ class ReplicateService {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1500))
 
-    // Generate mock image URL
-    const text = encodeURIComponent(prompt.substring(0, 30))
+    // Generate mock image URL. A model without a prompt still gets a label
+    const text = encodeURIComponent(prompt ? prompt.substring(0, 30) : 'upscaled')
     const color = Math.random() > 0.5 ? '4CAF50' : '2196F3'
     const imageUrl = `https://via.placeholder.com/512x512/${color}/FFFFFF?text=${text}`
 
