@@ -460,7 +460,16 @@ function getPortColor(portType) {
   border: var(--flora-border-width-thick) solid var(--flora-color-surface);
   box-shadow: var(--flora-shadow-md);
   cursor: crosshair;
-  transition: all var(--flora-transition-fast);
+  /* Deliberately not `all`: handles are spread down the side of the node, so
+     `top` changes whenever a node gains or loses a port. VueFlow reads handle
+     positions once per change and would catch one mid-slide, leaving the edge
+     pinned to a spot the handle has already left */
+  transition:
+    width var(--flora-transition-fast),
+    height var(--flora-transition-fast),
+    background-color var(--flora-transition-fast),
+    border-color var(--flora-transition-fast),
+    box-shadow var(--flora-transition-fast);
 }
 
 :deep(.vue-flow__handle:hover) {

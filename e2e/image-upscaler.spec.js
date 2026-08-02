@@ -45,6 +45,31 @@ async function setupUpscaler(page, { connect = true } = {}) {
 }
 
 /**
+ * Vertical distance in screen pixels between where the edge ends and the centre
+ * of the image input handle it is wired to. VueFlow draws edges inside a
+ * transformed viewport, so the path point is mapped through the SVG's screen
+ * matrix. Only the vertical axis is measured: an edge ends at the node's edge
+ * rather than at the middle of the handle, which is a constant horizontal
+ * offset, while the bug this guards against moves the handle up or down
+ */
+async function edgeToHandleGap(page) {
+  return page.evaluate(() => {
+    const path = document.querySelector('.vue-flow__edge-path')
+    const handle = document.querySelector(
+      '.vue-flow__node-image-generator .vue-flow__handle-left'
+    )
+    if (!path || !handle) return null
+
+    const end = path.getPointAtLength(path.getTotalLength())
+    const screenEnd = end.matrixTransform(path.getScreenCTM())
+
+    const box = handle.getBoundingClientRect()
+
+    return Math.abs(screenEnd.y - (box.y + box.height / 2))
+  })
+}
+
+/**
  * Select the generator so its toolbar shows. `selectModel` clicks away when it
  * is done, which dismisses it
  */
@@ -202,6 +227,20 @@ test.describe('Image upscaler model', () => {
     // has to go with it rather than dangle
     await selectModel(page, generatorNode, 'p-image-upscale')
     await expect(page.locator('.vue-flow__edge')).toHaveCount(0)
+  })
+
+  test('keeps the image edge on its handle when the prompt port goes', async ({ page }) => {
+    const { generatorNode } = await setupUpscaler(page)
+
+    // Dropping the prompt port moves the image handle from a third of the way
+    // down the node to the middle, and the edge has to follow it
+    expect(await edgeToHandleGap(page)).toBeLessThan(4)
+
+    await selectModel(page, generatorNode, 'nano-banana-pro')
+    await expect(generatorNode.locator('.vue-flow__handle-left')).toHaveCount(2)
+
+    // And back again, now that the prompt port has returned
+    expect(await edgeToHandleGap(page)).toBeLessThan(4)
   })
 
   test('restores the prompt when switching back to a generator', async ({ page }) => {

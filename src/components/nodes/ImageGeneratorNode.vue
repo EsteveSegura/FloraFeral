@@ -240,7 +240,7 @@ onExecutionRequested(async () => {
 
 // VueFlow composables
 const { node } = useNode()
-const { updateNodeData, removeEdges } = useVueFlow()
+const { updateNodeData, removeEdges, updateNodeInternals } = useVueFlow()
 
 // Get the current node data from useNode composable
 const nodeData = computed(() => node.data)
@@ -314,6 +314,17 @@ const requiresPrompt = computed(() => {
 })
 
 const nodeInputs = computed(() => requiresPrompt.value ? ['image', 'prompt'] : ['image'])
+
+// Handles are spread evenly down the left side, so dropping the prompt port
+// moves the image one from a third of the way down to the middle. VueFlow reads
+// handle positions once per change, so it has to be told to look again or the
+// edge already wired to the image port stays where the handle used to be.
+// `flush: 'post'` runs it after the DOM has settled, and the watch also covers
+// the way back, and any path that swaps the model without going through
+// onModelChange, such as loading a flow
+watch(requiresPrompt, () => {
+  updateNodeInternals([props.id])
+}, { flush: 'post' })
 
 // Without a prompt there is nothing to generate from but the connected image
 const canGenerate = computed(() => {
