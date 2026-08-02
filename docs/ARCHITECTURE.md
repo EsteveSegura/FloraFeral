@@ -701,6 +701,7 @@ const result = await replicateService.generateImage({
 | `flux-2-pro` | image | Up to 8 reference images |
 | `flux-2-max` | image | Highest fidelity of the FLUX family |
 | `gpt-image-1`, `gpt-image-2` | image | Need an OpenAI key for gpt-image-1 |
+| `p-image-upscale` | image | Upscaler: takes no prompt, needs one input image |
 | `lang-segment-anything` | image | Segmentation, no prompt-driven generation |
 | `gpt-5`, `gemini-2.5-flash` | text | |
 | `p-video` | video | |
@@ -723,6 +724,27 @@ The FLUX models also swap parameters depending on the aspect ratio: `custom` sen
 and `height` and omits `resolution`, anything else sends `resolution` and omits the
 dimensions. The panel shows all three at once because the model, not the UI, decides which
 ones matter.
+
+### Models without a prompt
+
+A model config can declare `requiresPrompt: false`. `p-image-upscale` is the first one:
+it rewrites the image it is handed, so there is nothing for the user to describe.
+
+The flag is read in two places, and nowhere else:
+
+- `generateImage()` in `replicate.js` skips the "Prompt is required" guard for it
+- `ImageGeneratorNode.vue` computes `requiresPrompt` from it and drops the prompt textarea,
+  the connected-prompt preview and the `prompt` entry of `:inputs` — which is what makes
+  the input handle disappear
+
+Taking a handle away leaves any edge that landed on it pointing at nothing, so
+`onModelChange` removes the incoming prompt edges when it switches to a model that declares
+the flag. Handles are indexed by position (`input-0`, `input-1`), and `prompt` is the last
+one, so removing it does not renumber the image port and existing image edges survive.
+
+The node type's static IO config in `node-shapes.js` is left alone: it still declares both
+ports, which is what `connection.js` validates against. The flag hides a port, it does not
+redefine the node.
 
 ### One image per generation
 

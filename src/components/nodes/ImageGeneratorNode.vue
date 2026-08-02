@@ -96,7 +96,7 @@
     :type="type"
     :data="nodeData"
     :label="nodeData.label"
-    :inputs="['image', 'prompt']"
+    :inputs="nodeInputs"
     :outputs="['image']"
     :loading="isGenerating"
     :error="nodeData.error"
@@ -130,7 +130,7 @@
       </div>
 
       <!-- Prompt input (hidden if there's a connected prompt) -->
-      <div v-if="!connectedPrompt" class="prompt-section">
+      <div v-if="requiresPrompt && !connectedPrompt" class="prompt-section">
         <BaseLabel for="prompt">Prompt:</BaseLabel>
         <BaseTextarea
           id="prompt"
@@ -143,9 +143,14 @@
       </div>
 
       <!-- Show connected prompt info -->
-      <div v-else class="connected-prompt-info">
+      <div v-else-if="requiresPrompt" class="connected-prompt-info">
         <div class="section-label">📝 Using connected prompt</div>
         <div class="prompt-preview">{{ connectedPrompt }}</div>
+      </div>
+
+      <!-- An upscaler works off the connected image alone -->
+      <div v-else class="upscaler-hint">
+        Upscales the connected image. This model takes no prompt.
       </div>
 
       <!-- Generate button -->
@@ -153,7 +158,7 @@
         <BaseButton
           variant="primary"
           size="md"
-          :disabled="isGenerating || (!connectedPrompt && !localPrompt.trim())"
+          :disabled="isGenerating || !canGenerate"
           @click="handleGenerate"
         >
           {{ isGenerating ? 'Generating...' : 'Generate Image' }}
@@ -235,7 +240,7 @@ onExecutionRequested(async () => {
 
 // VueFlow composables
 const { node } = useNode()
-const { updateNodeData } = useVueFlow()
+const { updateNodeData, removeEdges } = useVueFlow()
 
 // Get the current node data from useNode composable
 const nodeData = computed(() => node.data)
@@ -301,6 +306,21 @@ const controls = computed(() => uiSchema.value?.controls || [])
 // Model options that go to the side panel instead of the toolbar
 const advancedControls = computed(() => uiSchema.value?.advancedControls || [])
 
+// An upscaler rewrites the image it is handed, so it declares
+// `requiresPrompt: false` and the node drops everything prompt related:
+// the textarea, the preview of a connected prompt and the input port itself
+const requiresPrompt = computed(() => {
+  return replicateService.getModel(currentModel.value)?.requiresPrompt !== false
+})
+
+const nodeInputs = computed(() => requiresPrompt.value ? ['image', 'prompt'] : ['image'])
+
+// Without a prompt there is nothing to generate from but the connected image
+const canGenerate = computed(() => {
+  if (!requiresPrompt.value) return connectedImages.value.length > 0
+  return Boolean(connectedPrompt.value || localPrompt.value.trim())
+})
+
 const { openPanel } = useSidePanel()
 
 // Get model label from uiSchema
@@ -323,6 +343,19 @@ function onModelChange(event) {
     model: newModel,
     params: defaults
   })
+
+  // Switching to a model without a prompt takes the input port away with it, so
+  // any prompt edge would be left pointing at a handle that is no longer there
+  if (replicateService.getModel(newModel)?.requiresPrompt === false) {
+    const orphanedEdges = flowStore.edges.filter(edge => {
+      if (edge.target !== props.id) return false
+      return getEdgePortType(edge, flowStore.nodes, nodeRegistry, false) === PORT_TYPES.PROMPT
+    })
+
+    if (orphanedEdges.length > 0) {
+      removeEdges(orphanedEdges)
+    }
+  }
 }
 
 // Handle parameter change
@@ -359,18 +392,24 @@ async function handleGenerate() {
   // Already generating - skip
   if (isGenerating.value) return
 
-  // No prompt available - throw error so workflow executor knows this node failed
-  if (!promptToUse.trim()) {
+  // Missing input - throw error so workflow executor knows this node failed
+  if (requiresPrompt.value && !promptToUse.trim()) {
     throw new Error('No prompt available. Connect a prompt node or enter a prompt.')
+  }
+
+  if (!requiresPrompt.value && connectedImages.value.length === 0) {
+    throw new Error('No image available. Connect an image node to upscale.')
   }
 
   isGenerating.value = true
 
   try {
-    // Update prompt before generating
-    updateNodeData(props.id, {
-      prompt: promptToUse
-    })
+    // Update prompt before generating, unless the model has no use for one
+    if (requiresPrompt.value) {
+      updateNodeData(props.id, {
+        prompt: promptToUse
+      })
+    }
 
     // Prepare input images from connected nodes
     // The API accepts HTTP URLs and data URLs (base64)
@@ -412,7 +451,9 @@ async function handleGenerate() {
 
     // Update node with generated image
     updateNodeData(props.id, {
-      prompt: promptToUse,
+      // A prompt typed before switching to an upscaler is left untouched, so it
+      // is still there if the user switches back
+      ...(requiresPrompt.value && { prompt: promptToUse }),
       lastOutputSrc: imageData,
       model: result.model,
       generationId: result.id,
@@ -560,6 +601,15 @@ async function handleGenerate() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.upscaler-hint {
+  padding: var(--flora-space-2);
+  background: var(--flora-color-info-bg);
+  border-radius: var(--flora-radius-md);
+  border: var(--flora-border-width-thin) solid var(--flora-color-info-border);
+  font-size: var(--flora-font-size-xs);
+  color: var(--flora-color-text-tertiary);
 }
 
 .generate-section {

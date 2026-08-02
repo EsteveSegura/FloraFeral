@@ -138,6 +138,27 @@ dials, Max is the highest fidelity of the three.
 **Input Images:** Flex takes up to 10, Pro and Max up to 8. The payload key is
 `input_images`, not `image_input`
 
+#### p-image-upscale (PrunaAI)
+
+An upscaler rather than a generator. It rewrites the image it is given, so it
+declares `requiresPrompt: false` and the Image Generator node hides its prompt
+textarea and its prompt input port while this model is selected.
+
+**Parameters:**
+- `target`: 1-8 megapixels (default: 4)
+- `enhance_realism`: boolean (default: true) - Recommended for AI generated images
+- `enhance_details`: boolean (default: false)
+- `output_format`: "jpg", "png", "webp" (default: "jpg")
+- `output_quality`: 0-100 (default: 80), ignored for png
+- `disable_safety_checker`: boolean (default: false)
+
+`upscale_mode` is fixed at `"target"` in `defaults` and read from there, and
+`factor` is never sent: the node offers a target resolution, which is the mode
+that reads it. `no_op` is deprecated and ignored by the model.
+
+**Input Images:** Exactly one, sent as `image` (a plain string, not an array).
+Any extra connected image is ignored
+
 ### Text Generation Models
 
 #### GPT-5 (OpenAI)

@@ -226,6 +226,30 @@ export async function mockFlux2(page, variant, { response = FAKE_GENERATED_IMAGE
 }
 
 /**
+ * Mock the P-Image-Upscale endpoint.
+ * The real model returns a single URI, so `output` is a plain string here.
+ */
+export async function mockPImageUpscale(page, { response = FAKE_GENERATED_IMAGE_2, assertRequest } = {}) {
+  await page.route('**/v1/models/prunaai/p-image-upscale/predictions', async (route) => {
+    const body = JSON.parse(route.request().postData())
+
+    if (assertRequest) {
+      assertRequest(body)
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'upscale-pred-' + Date.now(),
+        status: 'succeeded',
+        output: response,
+      }),
+    })
+  })
+}
+
+/**
  * Mock the P-Video video generation endpoint.
  * The real model returns a single URI, so `output` is a plain string here.
  */
