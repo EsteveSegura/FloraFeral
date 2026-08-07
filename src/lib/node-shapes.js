@@ -12,7 +12,8 @@ export const NODE_TYPES = {
   TEXT_GENERATOR: 'text-generator',
   VIDEO_GENERATOR: 'video-generator',
   GROUP: 'group',
-  COMMENT: 'comment'
+  COMMENT: 'comment',
+  REROUTE: 'reroute'
 }
 
 /**
@@ -21,7 +22,28 @@ export const NODE_TYPES = {
 export const PORT_TYPES = {
   IMAGE: 'image',
   PROMPT: 'prompt',
-  VIDEO: 'video'
+  VIDEO: 'video',
+  // Wildcard. Only a reroute declares it: it takes any port and hands on
+  // whatever it was given, so its real type is resolved from the graph
+  ANY: 'any'
+}
+
+/**
+ * Color token for a port type, used by every handle on the canvas
+ * @param {string} portType - PORT_TYPE
+ * @returns {string} CSS value
+ */
+export function getPortColor(portType) {
+  const colorMap = {
+    [PORT_TYPES.IMAGE]: 'var(--flora-color-port-image)',
+    [PORT_TYPES.PROMPT]: 'var(--flora-color-port-prompt)',
+    [PORT_TYPES.VIDEO]: 'var(--flora-color-port-video)',
+    text: 'var(--flora-color-port-text)',
+    number: 'var(--flora-color-port-number)'
+  }
+
+  // A reroute with nothing plugged in has no type yet: neutral grey
+  return colorMap[portType] || 'var(--flora-color-border-strong)'
 }
 
 /**
@@ -126,6 +148,12 @@ const NODE_IO_CONFIG = {
   [NODE_TYPES.COMMENT]: {
     inputs: [],
     outputs: []
+  },
+  // Both sides are the wildcard: the type a reroute carries is the one plugged
+  // into it, resolved from the graph rather than declared here
+  [NODE_TYPES.REROUTE]: {
+    inputs: [PORT_TYPES.ANY],
+    outputs: [PORT_TYPES.ANY]
   }
 }
 

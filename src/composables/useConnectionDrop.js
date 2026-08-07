@@ -11,6 +11,8 @@ import {
   getCompatibleConnectionOptions,
   validateConnection
 } from '@/lib/connection'
+import { PORT_TYPES } from '@/lib/node-shapes'
+import { resolveRerouteType } from '@/lib/upstream'
 
 // Rough node size used to place the new node around the drop point
 const NODE_WIDTH = 220
@@ -78,7 +80,16 @@ export function useConnectionDrop(
     const originNode = flowStore.nodes.find(n => n.id === origin.nodeId)
     if (!originNode) return
 
-    const portType = getHandlePortType(originNode.type, origin.handleId, origin.handleType)
+    let portType = getHandlePortType(originNode.type, origin.handleId, origin.handleType)
+
+    // A reroute declares the wildcard, so the menu has to be filtered by what it
+    // is actually carrying: otherwise every node would be offered, wired to its
+    // port 0 regardless of type. An unconnected reroute has nothing to offer and
+    // falls through the guard below, which is the right call
+    if (portType === PORT_TYPES.ANY) {
+      portType = resolveRerouteType(origin.nodeId, flowStore.nodes, flowStore.edges)
+    }
+
     if (!portType) return
 
     const dropPosition = screenToFlowCoordinate({ x: event.clientX, y: event.clientY })

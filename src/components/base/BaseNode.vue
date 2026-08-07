@@ -114,6 +114,7 @@ import { Handle, Position, useVueFlow } from '@vue-flow/core'
 import { useSettingsStore } from '@/stores/settings'
 import { canTakeBatchRole } from '@/lib/batch-io'
 import { ensureUniqueLabel } from '@/lib/node-label'
+import { getPortColor } from '@/lib/node-shapes'
 
 const settingsStore = useSettingsStore()
 const { updateNodeData, getNodes } = useVueFlow()
@@ -273,19 +274,6 @@ function getPortLabel(port) {
   return port.label || port.type
 }
 
-/**
- * Get color for port type using Flora design tokens
- */
-function getPortColor(portType) {
-  const colorMap = {
-    image: 'var(--flora-color-port-image)',
-    prompt: 'var(--flora-color-port-prompt)',
-    text: 'var(--flora-color-port-text)',
-    number: 'var(--flora-color-port-number)',
-    video: 'var(--flora-color-port-video)'
-  }
-  return colorMap[portType] || 'var(--flora-color-border-strong)'
-}
 </script>
 
 <style scoped>
