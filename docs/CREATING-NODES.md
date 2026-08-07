@@ -770,7 +770,12 @@ Useful emojis for BaseNode's `icon` prop:
 - [ ] Composables used (`useNode`, `useVueFlow`)
 - [ ] Node registered in `node-registry.js`
 - [ ] IO configuration added in `getNodeIOConfig()`
+- [ ] Added to a category and given an icon in `NodesSidebar.vue` (both are
+      hardcoded there, and without this the node is unreachable from the UI)
 - [ ] Data initialization in `FlowCanvasView.vue` (if needed)
+- [ ] A `case` in `shouldExecuteNode()` in `workflow-executor.js`, unless the
+      node really does run: anything with an output port falls through to the
+      default and the executor will wait on it
 - [ ] Error handling implemented
 - [ ] Loading state implemented (if async)
 - [ ] Scoped CSS styles added

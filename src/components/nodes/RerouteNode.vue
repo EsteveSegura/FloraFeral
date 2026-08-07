@@ -68,8 +68,10 @@ const tooltip = computed(() =>
 <style scoped>
 .reroute-node {
   position: relative;
-  width: 34px;
-  height: 14px;
+  /* Wide enough that the two handles do not read as a single blob, short
+     enough that the node stays out of the way of the wire it is bending */
+  width: 44px;
+  height: 16px;
   background: var(--flora-color-surface);
   border: var(--flora-border-width-medium) solid var(--flora-color-border-default);
   border-radius: var(--flora-radius-full);
