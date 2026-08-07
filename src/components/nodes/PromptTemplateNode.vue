@@ -38,9 +38,8 @@
 import { ref, computed, watch } from 'vue'
 import { useNode, useVueFlow } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flow'
-import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
-import nodeRegistry from '@/lib/node-registry'
+import { readUpstream, pickPrompt } from '@/lib/upstream'
 import { extractVariables, applyVariables } from '@/lib/prompt-template'
 import BaseNode from '@/components/base/BaseNode.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -76,23 +75,12 @@ const nodeData = computed(() => node.data)
 // Local state for variables
 const localVariables = ref(props.data.variables || {})
 
-// Get input prompt from connected node
-const inputPrompt = computed(() => {
-  const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
-
-  for (const edge of incomingEdges) {
-    // Check if this edge connects a PROMPT port
-    const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
-    if (portType !== PORT_TYPES.PROMPT) continue
-
-    const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
-    if (sourceNode && sourceNode.data?.prompt) {
-      return sourceNode.data.prompt
-    }
-  }
-
-  return ''
-})
+// Get input prompt from connected node, reaching past any reroute in between
+const inputPrompt = computed(() =>
+  readUpstream(props.id, flowStore.nodes, flowStore.edges, pickPrompt, {
+    portType: PORT_TYPES.PROMPT
+  }) || ''
+)
 
 // Detect variables in the input prompt
 const detectedVariables = computed(() => extractVariables(inputPrompt.value))

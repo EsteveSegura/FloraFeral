@@ -76,9 +76,8 @@
 import { ref, computed, watchEffect } from 'vue'
 import { useNode, useVueFlow } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flow'
-import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
-import nodeRegistry from '@/lib/node-registry'
+import { readUpstream, pickImage } from '@/lib/upstream'
 import BaseNode from '@/components/base/BaseNode.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -116,23 +115,12 @@ const nodeData = computed(() => node.data)
 const showDrawingModal = ref(false)
 const drawingCanvasRef = ref(null)
 
-// Get connected image from upstream nodes
-const connectedImage = computed(() => {
-  const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
-
-  for (const edge of incomingEdges) {
-    const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
-    if (portType !== PORT_TYPES.IMAGE) continue
-
-    const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
-    if (!sourceNode || !sourceNode.data) continue
-
-    const imageSrc = sourceNode.data.src || sourceNode.data.lastOutputSrc || sourceNode.data.outputSrc
-    if (imageSrc) return imageSrc
-  }
-
-  return null
-})
+// Get connected image from upstream nodes, reaching past any reroute in between
+const connectedImage = computed(() =>
+  readUpstream(props.id, flowStore.nodes, flowStore.edges, pickImage, {
+    portType: PORT_TYPES.IMAGE
+  })
+)
 
 // Current image to draw on (always the original without strokes)
 const currentImageSrc = computed(() => {

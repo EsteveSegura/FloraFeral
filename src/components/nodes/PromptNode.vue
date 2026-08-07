@@ -29,9 +29,8 @@
 import { ref, computed, watch } from 'vue'
 import { useNode, useVueFlow } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flow'
-import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
-import nodeRegistry from '@/lib/node-registry'
+import { readUpstream, pickPrompt } from '@/lib/upstream'
 import BaseNode from '@/components/base/BaseNode.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 
@@ -63,23 +62,12 @@ const { updateNodeData } = useVueFlow()
 // Get the current node data from useNode composable
 const nodeData = computed(() => node.data)
 
-// Get input prompt from connected node
-const connectedPrompt = computed(() => {
-  const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
-
-  for (const edge of incomingEdges) {
-    // Check if this edge connects a PROMPT port
-    const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
-    if (portType !== PORT_TYPES.PROMPT) continue
-
-    const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
-    if (sourceNode && sourceNode.data?.prompt) {
-      return sourceNode.data.prompt
-    }
-  }
-
-  return null
-})
+// Get input prompt from connected node, reaching past any reroute in between
+const connectedPrompt = computed(() =>
+  readUpstream(props.id, flowStore.nodes, flowStore.edges, pickPrompt, {
+    portType: PORT_TYPES.PROMPT
+  })
+)
 
 // Initialize local prompt with connected prompt or stored prompt
 const localPrompt = ref(connectedPrompt.value || props.data.prompt || '')

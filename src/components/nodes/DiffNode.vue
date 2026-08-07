@@ -43,9 +43,8 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useNode } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flow'
 import BaseNode from '@/components/base/BaseNode.vue'
-import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
-import nodeRegistry from '@/lib/node-registry'
+import { readUpstreamAll, pickImage } from '@/lib/upstream'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -64,32 +63,17 @@ const { node } = useNode()
 // Get the current node data from useNode composable
 const nodeData = computed(() => node.data)
 
-// Get connected images from incoming edges
-// Using flowStore directly for reactivity with PORT_TYPE validation
-const connectedImages = computed(() => {
-  const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
-
-  return incomingEdges
-    .map(edge => {
-      // Validate port type
-      const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
-      if (portType !== PORT_TYPES.IMAGE) return null
-
-      const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
-      if (!sourceNode) return null
-
-      // Get image from source node
-      const imageSrc = sourceNode.data?.src || sourceNode.data?.lastOutputSrc
-      if (!imageSrc) return null
-
-      return {
-        src: imageSrc,
-        handle: edge.targetHandle,
-        nodeId: edge.source
-      }
-    })
-    .filter(img => img !== null)
-})
+// Get connected images from incoming edges, reaching past any reroute in
+// between. Kept in edge order, which is what tells the two inputs apart
+const connectedImages = computed(() =>
+  readUpstreamAll(props.id, flowStore.nodes, flowStore.edges, pickImage, {
+    portType: PORT_TYPES.IMAGE
+  }).map(input => ({
+    src: input.value,
+    handle: input.handle,
+    nodeId: input.nodeId
+  }))
+)
 
 const hasImage1 = computed(() => {
   return connectedImages.value.some(img => img.handle === 'input-0')
