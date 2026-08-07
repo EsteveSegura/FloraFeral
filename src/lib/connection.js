@@ -1,5 +1,7 @@
-import { PORT_TYPES } from './node-shapes'
+import { NODE_TYPES, PORT_TYPES } from './node-shapes'
 import nodeRegistry from './node-registry'
+import { getDeclaredPortType } from './ports'
+import { isPassThrough, resolveRerouteType } from './upstream'
 
 /**
  * Get the PORT_TYPE for an edge connection
@@ -7,9 +9,11 @@ import nodeRegistry from './node-registry'
  * @param {Array} nodes - Array of all nodes
  * @param {Object} registry - Node registry instance
  * @param {boolean} isSource - True for source port, false for target port
+ * @param {Array} [edges] - All edges. Needed to resolve what a reroute carries;
+ *   without it a reroute reports the wildcard
  * @returns {string|null} PORT_TYPE ('image', 'prompt') or null
  */
-export function getEdgePortType(edge, nodes, registry, isSource = true) {
+export function getEdgePortType(edge, nodes, registry, isSource = true, edges = null) {
   const nodeId = isSource ? edge.source : edge.target
   const handleId = isSource ? edge.sourceHandle : edge.targetHandle
 
@@ -18,17 +22,16 @@ export function getEdgePortType(edge, nodes, registry, isSource = true) {
   const node = nodes.find(n => n.id === nodeId)
   if (!node) return null
 
-  const nodeDef = registry.getNodeDef(node.type)
-  if (!nodeDef) return null
+  const declared = getDeclaredPortType(node.type, handleId, isSource, registry)
 
-  // Parse handle index (e.g., "output-0" -> 0)
-  const handleIndex = parseInt(handleId.split('-')[1])
-  if (isNaN(handleIndex)) return null
+  // A reroute declares the wildcard on both sides: swap it for the type it is
+  // actually carrying, and keep the wildcard while nothing feeds it so it
+  // still accepts anything
+  if (declared === PORT_TYPES.ANY && isPassThrough(node) && edges) {
+    return resolveRerouteType(node.id, nodes, edges) || PORT_TYPES.ANY
+  }
 
-  // Get port types array
-  const portTypes = isSource ? nodeDef.outputs : nodeDef.inputs
-
-  return portTypes[handleIndex] || null
+  return declared
 }
 
 /**
@@ -40,17 +43,7 @@ export function getEdgePortType(edge, nodes, registry, isSource = true) {
  * @returns {string|null} PORT_TYPE ('image', 'prompt') or null
  */
 export function getHandlePortType(nodeType, handleId, handleType) {
-  if (!nodeType || !handleId) return null
-
-  const nodeDef = nodeRegistry.getNodeDef(nodeType)
-  if (!nodeDef) return null
-
-  const handleIndex = parseInt(handleId.split('-')[1])
-  if (isNaN(handleIndex)) return null
-
-  const portTypes = handleType === 'source' ? nodeDef.outputs : nodeDef.inputs
-
-  return portTypes[handleIndex] || null
+  return getDeclaredPortType(nodeType, handleId, handleType === 'source', nodeRegistry)
 }
 
 /**
@@ -60,6 +53,11 @@ export function getHandlePortType(nodeType, handleId, handleType) {
  * @returns {boolean} true if compatible, false otherwise
  */
 function canConnect(sourcePortType, targetPortType) {
+  // A reroute reports the wildcard only while nothing feeds it: once it is
+  // carrying something, getEdgePortType hands out the concrete type and this
+  // goes back to being a strict equality
+  if (sourcePortType === PORT_TYPES.ANY || targetPortType === PORT_TYPES.ANY) return true
+
   // Ports must be of the same type to connect
   return sourcePortType === targetPortType
 }
@@ -203,22 +201,42 @@ export function validateConnection(connection, sourceNode, targetNode, existingE
 
   // IMPORTANT: Validate specific port types if handles are provided
   if (connection.sourceHandle && connection.targetHandle) {
-    const sourcePortType = getEdgePortType(connection, allNodes.length > 0 ? allNodes : [sourceNode, targetNode], nodeRegistry, true)
-    const targetPortType = getEdgePortType(connection, allNodes.length > 0 ? allNodes : [sourceNode, targetNode], nodeRegistry, false)
+    const pool = allNodes.length > 0 ? allNodes : [sourceNode, targetNode]
 
-    if (sourcePortType && targetPortType) {
-      if (sourcePortType !== targetPortType) {
-        return {
-          valid: false,
-          reason: `Incompatible port types: ${sourcePortType} → ${targetPortType}`
-        }
+    // Passing the edges is what lets a reroute be typed from the graph, so a
+    // chain of them resolves correctly mid-drag
+    const sourcePortType = getEdgePortType(connection, pool, nodeRegistry, true, existingEdges)
+    const targetPortType = getEdgePortType(connection, pool, nodeRegistry, false, existingEdges)
+
+    if (sourcePortType && targetPortType && !canConnect(sourcePortType, targetPortType)) {
+      return {
+        valid: false,
+        reason: `Incompatible port types: ${sourcePortType} → ${targetPortType}`
       }
     }
   }
 
-  // Prevent duplicate connections (same source and target)
+  // A reroute forwards exactly one signal: with several inputs both the type it
+  // carries and the value it hands on would be arbitrary
+  if (targetNode.type === NODE_TYPES.REROUTE) {
+    const alreadyFed = existingEdges.some(edge => edge.target === connection.target)
+
+    if (alreadyFed) {
+      return {
+        valid: false,
+        reason: 'A reroute already has an input'
+      }
+    }
+  }
+
+  // Prevent duplicate connections (same wire, handles included)
+  // Comparing the target handle too is what lets one source feed two different
+  // inputs of the same node, which the two image inputs of Diff and Compare
+  // have always been meant to allow
   const isDuplicate = existingEdges.some(
-    edge => edge.source === connection.source && edge.target === connection.target
+    edge => edge.source === connection.source &&
+      edge.target === connection.target &&
+      (edge.targetHandle ?? null) === (connection.targetHandle ?? null)
   )
 
   if (isDuplicate) {

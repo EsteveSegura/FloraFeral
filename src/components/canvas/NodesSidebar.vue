@@ -130,7 +130,8 @@ const helperNodes = computed(() =>
     n.type === NODE_TYPES.DRAW ||
     n.type === NODE_TYPES.DIFF ||
     n.type === NODE_TYPES.COMPARE ||
-    n.type === NODE_TYPES.COMMENT
+    n.type === NODE_TYPES.COMMENT ||
+    n.type === NODE_TYPES.REROUTE
   )
 )
 
@@ -145,7 +146,8 @@ function getNodeIcon(type) {
     [NODE_TYPES.VIDEO_GENERATOR]: '🎬',
     [NODE_TYPES.PROMPT_TEMPLATE]: '📋',
     [NODE_TYPES.DRAW]: '🖌️',
-    [NODE_TYPES.COMMENT]: '🗒️'
+    [NODE_TYPES.COMMENT]: '🗒️',
+    [NODE_TYPES.REROUTE]: '🔀'
   }
   return icons[type] || '⚙️'
 }

@@ -195,9 +195,8 @@ import BaseLabel from '@/components/ui/BaseLabel.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import replicateService from '@/services/replicate'
-import { getEdgePortType } from '@/lib/connection'
 import { PORT_TYPES } from '@/lib/node-shapes'
-import nodeRegistry from '@/lib/node-registry'
+import { readUpstream, pickImage, pickPrompt } from '@/lib/upstream'
 import { convertUrlToBase64, isHttpUrl } from '@/lib/image-utils'
 import { useWorkflowEvents } from '@/composables/useWorkflowEvents'
 import { useSidePanel, PANEL_TYPES } from '@/composables/useSidePanel'
@@ -258,23 +257,16 @@ const inputPorts = [
 ]
 
 /**
- * Read the image coming into one of this node's image handles
+ * Read the image coming into one of this node's image handles, reaching past
+ * any reroute in between
  * @param {string} handleId - Target handle id
  * @returns {string|null} Image src or null when nothing is connected
  */
 function readImageOnHandle(handleId) {
-  const edge = flowStore.edges.find(
-    e => e.target === props.id && e.targetHandle === handleId
-  )
-  if (!edge) return null
-
-  const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
-  if (portType !== PORT_TYPES.IMAGE) return null
-
-  const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
-  if (!sourceNode || !sourceNode.data) return null
-
-  return sourceNode.data.src || sourceNode.data.lastOutputSrc || null
+  return readUpstream(props.id, flowStore.nodes, flowStore.edges, pickImage, {
+    portType: PORT_TYPES.IMAGE,
+    handle: handleId
+  })
 }
 
 // First frame of the video (image-to-video)
@@ -284,22 +276,11 @@ const firstFrameImage = computed(() => readImageOnHandle(FIRST_FRAME_HANDLE))
 const lastFrameImage = computed(() => readImageOnHandle(LAST_FRAME_HANDLE))
 
 // Get connected prompt from upstream nodes (uses PORT_TYPE instead of node type)
-const connectedPrompt = computed(() => {
-  const incomingEdges = flowStore.edges.filter(edge => edge.target === props.id)
-
-  for (const edge of incomingEdges) {
-    // Check if this edge connects a PROMPT port
-    const portType = getEdgePortType(edge, flowStore.nodes, nodeRegistry, true)
-    if (portType !== PORT_TYPES.PROMPT) continue
-
-    const sourceNode = flowStore.nodes.find(n => n.id === edge.source)
-    if (sourceNode && sourceNode.data?.prompt) {
-      return sourceNode.data.prompt
-    }
-  }
-
-  return null
-})
+const connectedPrompt = computed(() =>
+  readUpstream(props.id, flowStore.nodes, flowStore.edges, pickPrompt, {
+    portType: PORT_TYPES.PROMPT
+  })
+)
 
 // Toolbar controls - Available models (only video generation models)
 const availableModels = computed(() => replicateService.listModels('video'))

@@ -16,6 +16,7 @@ import TextGeneratorNode from '@/components/nodes/TextGeneratorNode.vue'
 import VideoGeneratorNode from '@/components/nodes/VideoGeneratorNode.vue'
 import GroupNode from '@/components/nodes/GroupNode.vue'
 import CommentNode from '@/components/nodes/CommentNode.vue'
+import RerouteNode from '@/components/nodes/RerouteNode.vue'
 
 /**
  * Register all available node types
@@ -170,6 +171,22 @@ export function registerAllNodes() {
     inputs: [],
     outputs: [],
     component: CommentNode,
+    config: {
+      category: 'Helper',
+      color: '#6B7280'
+    }
+  })
+
+  // Register Reroute Node
+  // Both ports are the wildcard, so it shows up in every connection menu and
+  // accepts anything. What it actually carries is resolved from the graph
+  nodeRegistry.registerNode({
+    type: NODE_TYPES.REROUTE,
+    label: 'Reroute',
+    description: 'Bend a connection to tidy the graph - takes any port type and forwards it unchanged',
+    inputs: [PORT_TYPES.ANY],
+    outputs: [PORT_TYPES.ANY],
+    component: RerouteNode,
     config: {
       category: 'Helper',
       color: '#6B7280'

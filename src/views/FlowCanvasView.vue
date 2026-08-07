@@ -65,13 +65,15 @@
         :default-viewport="{ zoom: 1 }"
         :min-zoom="0.2"
         :max-zoom="4"
-        :delete-key-code="['Delete', 'Backspace']"
+        :delete-key-code="null"
         :multi-selection-key-code="['Meta', 'Control']"
         :nodes-draggable="!isLocked"
         :pan-on-drag="!isLocked"
         :connection-radius="60"
         :snap-to-handle="true"
         :connection-line-style="{ strokeWidth: 2 }"
+        :default-edge-options="{ type: settingsStore.edgeType }"
+        :connection-line-type="settingsStore.edgeType"
         elevate-edges-on-select
         elevate-nodes-on-select
       >
@@ -113,7 +115,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, markRaw } from 'vue'
+import { computed, onMounted, onUnmounted, ref, markRaw, watch } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { useFlowStore } from '@/stores/flow'
@@ -140,6 +142,7 @@ import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { useGroupManagement } from '@/composables/useGroupManagement'
 import { useAutoLayout } from '@/composables/useAutoLayout'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { useNodeDeletion } from '@/composables/useNodeDeletion'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useConnectionDrop } from '@/composables/useConnectionDrop'
 import { useSidePanel, PANEL_TYPES } from '@/composables/useSidePanel'
@@ -166,8 +169,27 @@ const showIntro = ref(false)
 // Show alert if no Replicate API key is configured
 const showAlert = computed(() => !settingsStore.getReplicateApiKey())
 
+// defaultEdgeOptions only stamps the type on edges as they are added, so edges
+// already on the canvas (or restored from a .json saved with another shape)
+// keep whatever type they had. Rewrite them whenever either side changes
+watch(
+  [() => settingsStore.edgeType, () => flowStore.edges.length],
+  () => {
+    for (const edge of flowStore.edges) {
+      if (edge.type !== settingsStore.edgeType) {
+        edge.type = settingsStore.edgeType
+      }
+    }
+  },
+  { immediate: true }
+)
+
 // VueFlow composable
-const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
+const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData, getSelectedNodes, getSelectedEdges, removeNodes, removeEdges } = useVueFlow()
+
+// Deleting the selection is wrapped rather than left to VueFlow, so a reroute
+// on the way out leaves the wire it was bending connected. See useNodeDeletion
+useNodeDeletion(flowStore, { getSelectedNodes, getSelectedEdges, removeNodes, removeEdges, addEdges })
 
 // Use composables
 const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })

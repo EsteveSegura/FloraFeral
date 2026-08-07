@@ -22,6 +22,31 @@
         </div>
       </div>
 
+      <!-- Connections Section -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Connections</h3>
+        <div class="settings-option">
+          <label for="edge-type" class="settings-label">
+            Edge shape
+          </label>
+          <BaseSelect
+            id="edge-type"
+            v-model="settingsStore.edgeType"
+          >
+            <option
+              v-for="option in EDGE_TYPE_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </BaseSelect>
+          <p class="settings-option-description settings-option-description--flush">
+            {{ edgeTypeDescription }}
+          </p>
+        </div>
+      </div>
+
       <!-- Save Behavior Section -->
       <div class="settings-section">
         <h3 class="settings-section-title">Save Behavior</h3>
@@ -126,7 +151,17 @@ import { ref, computed, watch } from 'vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseCheckbox from '@/components/ui/BaseCheckbox.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { useSettingsStore } from '@/stores/settings'
+
+// VueFlow's built-in edge types. 'default' is the bezier curve it ships with
+const EDGE_TYPE_OPTIONS = [
+  { value: 'default', label: 'Curved (bezier)', description: 'Smooth curves leaving each handle, the default' },
+  { value: 'simplebezier', label: 'Simple curve', description: 'A softer bezier that ignores the handle direction' },
+  { value: 'smoothstep', label: 'Right angles (rounded)', description: '90 degree turns with rounded corners' },
+  { value: 'step', label: 'Right angles (sharp)', description: '90 degree turns with sharp corners' },
+  { value: 'straight', label: 'Straight line', description: 'A direct line from handle to handle' }
+]
 
 const props = defineProps({
   modelValue: {
@@ -142,6 +177,11 @@ const settingsStore = useSettingsStore()
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
+})
+
+const edgeTypeDescription = computed(() => {
+  const option = EDGE_TYPE_OPTIONS.find((o) => o.value === settingsStore.edgeType)
+  return option ? option.description : ''
 })
 
 // Local state for API keys - initialized from store
@@ -219,6 +259,12 @@ function handleClearKeys() {
   font-size: var(--flora-font-size-xs);
   color: var(--flora-color-text-tertiary);
   padding-left: calc(18px + var(--flora-space-2));
+}
+
+/* Selects and inputs are full width, so their hint does not need the
+   checkbox indent */
+.settings-option-description--flush {
+  padding-left: 0;
 }
 
 .settings-option-description a {

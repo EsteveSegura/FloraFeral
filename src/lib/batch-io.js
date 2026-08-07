@@ -5,8 +5,7 @@
  */
 
 import { NODE_TYPES, PORT_TYPES } from './node-shapes'
-import { getEdgePortType } from './connection'
-import nodeRegistry from './node-registry'
+import { resolveUpstream, pickPrompt } from './upstream'
 import { extractVariables, applyVariables } from './prompt-template'
 
 /**
@@ -118,19 +117,11 @@ export function resolveUpstreamPrompt(nodeId, nodes, edges) {
  * @returns {Object|null} Source node, or null
  */
 export function resolveUpstreamPromptNode(nodeId, nodes, edges) {
-  const incomingEdges = edges.filter(edge => edge.target === nodeId)
+  // The real producer, never a reroute standing in the middle of the wire:
+  // BatchRunModal writes the batch rows into whatever comes back from here
+  const inputs = resolveUpstream(nodeId, nodes, edges, { portType: PORT_TYPES.PROMPT })
 
-  for (const edge of incomingEdges) {
-    const portType = getEdgePortType(edge, nodes, nodeRegistry, true)
-    if (portType !== PORT_TYPES.PROMPT) continue
-
-    const sourceNode = nodes.find(n => n.id === edge.source)
-    if (sourceNode?.data?.prompt) {
-      return sourceNode
-    }
-  }
-
-  return null
+  return inputs.find(input => pickPrompt(input.node))?.node || null
 }
 
 /**
