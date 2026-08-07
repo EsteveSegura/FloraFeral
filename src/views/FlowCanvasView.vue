@@ -65,7 +65,7 @@
         :default-viewport="{ zoom: 1 }"
         :min-zoom="0.2"
         :max-zoom="4"
-        :delete-key-code="['Delete', 'Backspace']"
+        :delete-key-code="null"
         :multi-selection-key-code="['Meta', 'Control']"
         :nodes-draggable="!isLocked"
         :pan-on-drag="!isLocked"
@@ -142,6 +142,7 @@ import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { useGroupManagement } from '@/composables/useGroupManagement'
 import { useAutoLayout } from '@/composables/useAutoLayout'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { useNodeDeletion } from '@/composables/useNodeDeletion'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useConnectionDrop } from '@/composables/useConnectionDrop'
 import { useSidePanel, PANEL_TYPES } from '@/composables/useSidePanel'
@@ -184,7 +185,11 @@ watch(
 )
 
 // VueFlow composable
-const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
+const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData, getSelectedNodes, getSelectedEdges, removeNodes, removeEdges } = useVueFlow()
+
+// Deleting the selection is wrapped rather than left to VueFlow, so a reroute
+// on the way out leaves the wire it was bending connected. See useNodeDeletion
+useNodeDeletion(flowStore, { getSelectedNodes, getSelectedEdges, removeNodes, removeEdges, addEdges })
 
 // Use composables
 const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })

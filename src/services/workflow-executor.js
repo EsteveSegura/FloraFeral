@@ -9,6 +9,7 @@ import { useWorkflowExecutionStore } from '@/stores/workflow-execution'
 import { useFlowStore } from '@/stores/flow'
 import nodeRegistry from '@/lib/node-registry'
 import { NODE_TYPES } from '@/lib/node-shapes'
+import { resolveUpstream } from '@/lib/upstream'
 
 /**
  * Default execution options
@@ -71,6 +72,12 @@ function shouldExecuteNode(node) {
     case NODE_TYPES.IMAGE:
       // Image nodes are source nodes with uploaded images
       // They don't need execution
+      return false
+
+    case NODE_TYPES.REROUTE:
+      // Pure wiring: it forwards whatever feeds it, there is nothing to run.
+      // Without this case it would fall through to the default below and hang
+      // until the node timeout, since it declares an output port
       return false
 
     default:
@@ -174,17 +181,20 @@ class WorkflowExecutor {
       dependentsMap.set(nodeId, new Set())
     }
 
-    for (const edge of edges) {
-      const sourceExecutable = executableNodes.includes(edge.source)
-      const targetExecutable = executableNodes.includes(edge.target)
+    // Dependencies are resolved through the graph rather than edge by edge: a
+    // reroute never executes, so an edge landing on one is not a dependency,
+    // the node feeding that reroute is. Walking the edges directly would drop
+    // generator -> reroute -> generator and let the second one start early
+    // A source that is not executable (a static Image node, say) is still no
+    // dependency: there is nothing to wait for
+    const executableSet = new Set(executableNodes)
 
-      if (targetExecutable) {
-        // Only add dependency if source is also executable
-        // (if source is a static node like Image, we don't wait for it)
-        if (sourceExecutable) {
-          dependencyMap.get(edge.target).add(edge.source)
-          dependentsMap.get(edge.source).add(edge.target)
-        }
+    for (const nodeId of executableNodes) {
+      for (const input of resolveUpstream(nodeId, nodes, edges)) {
+        if (!executableSet.has(input.node.id)) continue
+
+        dependencyMap.get(nodeId).add(input.node.id)
+        dependentsMap.get(input.node.id).add(nodeId)
       }
     }
 
