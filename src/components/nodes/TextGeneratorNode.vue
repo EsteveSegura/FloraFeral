@@ -267,6 +267,19 @@ watch(localPrompt, (newPrompt) => {
   updateNodeData(props.id, { userPrompt: newPrompt })
 })
 
+// The store is the source of truth after an undo, an import or a batch run.
+// Without this the textarea would keep the newer text and the next keystroke
+// would write it straight back, which reads as a broken undo
+watch(() => nodeData.value.userPrompt, (newPrompt) => {
+  if ((newPrompt ?? '') !== localPrompt.value) localPrompt.value = newPrompt ?? ''
+})
+
+// `immediate` because currentModel never read the stored model: loading a flow
+// left the dropdown on gpt-5 no matter what the node was set to
+watch(() => nodeData.value.model, (newModel) => {
+  if (newModel && newModel !== currentModel.value) currentModel.value = newModel
+}, { immediate: true })
+
 // Handle model change
 function onModelChange(event) {
   currentModel.value = event.target.value
