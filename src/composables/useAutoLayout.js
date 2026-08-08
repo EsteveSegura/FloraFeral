@@ -1,22 +1,17 @@
 /**
  * Composable for Auto Layout
- * Rearranges the canvas by dependency and offers a one step undo, since the
- * repo has no history and a layout throws away every manual placement
+ * Rearranges the canvas by dependency. Reverting it is the canvas-wide undo's
+ * job now, see useFlowHistory
  */
 
-import { computed, nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
 import { computeAutoLayout } from '@/lib/auto-layout'
-import { getGroupSize, isCenterInsideGroup } from '@/lib/group-membership'
+import { isCenterInsideGroup } from '@/lib/group-membership'
 import { NODE_TYPES } from '@/lib/node-shapes'
 import { useSettingsStore } from '@/stores/settings'
 
-export function useAutoLayout(flowStore, { applyNodeChanges, fitView }) {
+export function useAutoLayout(flowStore, { applyNodeChanges, fitView, flushHistory }) {
   const settingsStore = useSettingsStore()
-
-  // Positions and group sizes as they were right before the last layout
-  const snapshot = ref(null)
-
-  const canUndoLayout = computed(() => snapshot.value !== null)
 
   /**
    * Group sizes live in `style` because that is what the JSON keeps. Writing
@@ -60,11 +55,10 @@ export function useAutoLayout(flowStore, { applyNodeChanges, fitView }) {
     // before reading them
     await nextTick()
 
-    const previous = flowStore.nodes.map(node => ({
-      id: node.id,
-      position: { ...node.position },
-      size: node.type === NODE_TYPES.GROUP ? getGroupSize(node) : null
-    }))
+    // Close whatever step is in flight, so the whole rearrangement is ONE entry
+    // of the history and a single Ctrl+Z takes it back, positions and group
+    // sizes together
+    flushHistory()
 
     const { positions, groupSizes } = computeAutoLayout(flowStore.nodes, flowStore.edges, {
       layoutGroupContents: settingsStore.autoLayoutGroupContents
@@ -82,41 +76,13 @@ export function useAutoLayout(flowStore, { applyNodeChanges, fitView }) {
       if (node.selected) node.selected = false
     }
 
-    snapshot.value = previous
-
     if (import.meta.env.DEV) warnOnStrayNodes()
 
     await nextTick()
     fitView({ duration: 300, padding: 0.2 })
   }
 
-  /**
-   * Put every node back where it was before the last layout. Nodes added or
-   * removed since then are skipped rather than resurrected.
-   */
-  async function undoAutoLayout() {
-    if (!snapshot.value) return
-
-    const previous = snapshot.value
-    snapshot.value = null
-
-    resizeGroups(new Map(
-      previous.filter(entry => entry.size).map(entry => [entry.id, entry.size])
-    ))
-
-    const byId = new Map(flowStore.nodes.map(node => [node.id, node]))
-    for (const entry of previous) {
-      const node = byId.get(entry.id)
-      if (node) node.position = { ...entry.position }
-    }
-
-    await nextTick()
-    fitView({ duration: 300, padding: 0.2 })
-  }
-
   return {
-    canUndoLayout,
-    handleAutoLayout,
-    undoAutoLayout
+    handleAutoLayout
   }
 }
