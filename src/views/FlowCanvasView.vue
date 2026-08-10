@@ -72,6 +72,8 @@
         :connection-radius="60"
         :snap-to-handle="true"
         :connection-line-style="{ strokeWidth: 2 }"
+        :default-edge-options="{ type: settingsStore.edgeType }"
+        :connection-line-type="settingsStore.edgeType"
         elevate-edges-on-select
         elevate-nodes-on-select
       >
@@ -113,7 +115,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, markRaw } from 'vue'
+import { computed, onMounted, onUnmounted, ref, markRaw, watch } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { useFlowStore } from '@/stores/flow'
@@ -165,6 +167,21 @@ const showIntro = ref(false)
 
 // Show alert if no Replicate API key is configured
 const showAlert = computed(() => !settingsStore.getReplicateApiKey())
+
+// defaultEdgeOptions only stamps the type on edges as they are added, so edges
+// already on the canvas (or restored from a .json saved with another shape)
+// keep whatever type they had. Rewrite them whenever either side changes
+watch(
+  [() => settingsStore.edgeType, () => flowStore.edges.length],
+  () => {
+    for (const edge of flowStore.edges) {
+      if (edge.type !== settingsStore.edgeType) {
+        edge.type = settingsStore.edgeType
+      }
+    }
+  },
+  { immediate: true }
+)
 
 // VueFlow composable
 const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()

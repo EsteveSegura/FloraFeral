@@ -40,6 +40,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const showNodeHeaders = ref(persisted.showNodeHeaders ?? false)
   const skipSaveDialog = ref(persisted.skipSaveDialog ?? false)
 
+  // Shape of the edges between nodes. 'default' is VueFlow's bezier curve
+  const edgeType = ref(persisted.edgeType ?? 'default')
+
   // Beta features, hidden until the user opts in
   const betaAutoLayout = ref(persisted.betaAutoLayout ?? false)
 
@@ -56,6 +59,7 @@ export const useSettingsStore = defineStore('settings', () => {
     () => ({
       showNodeHeaders: showNodeHeaders.value,
       skipSaveDialog: skipSaveDialog.value,
+      edgeType: edgeType.value,
       betaAutoLayout: betaAutoLayout.value,
       autoLayoutGroupContents: autoLayoutGroupContents.value,
       replicateApiKey: replicateApiKey.value,
@@ -78,6 +82,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setSkipSaveDialog(value) {
     skipSaveDialog.value = value
+  }
+
+  function setEdgeType(value) {
+    edgeType.value = value
   }
 
   function setBetaAutoLayout(value) {
@@ -123,6 +131,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // State
     showNodeHeaders,
     skipSaveDialog,
+    edgeType,
     betaAutoLayout,
     autoLayoutGroupContents,
     replicateApiKey,
@@ -132,6 +141,7 @@ export const useSettingsStore = defineStore('settings', () => {
     toggleNodeHeaders,
     setNodeHeaders,
     setSkipSaveDialog,
+    setEdgeType,
     setBetaAutoLayout,
     setAutoLayoutGroupContents,
     setReplicateApiKey,
