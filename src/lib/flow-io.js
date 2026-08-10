@@ -175,6 +175,10 @@ export async function importFlow(flowData, flowStore, vueFlowHelpers = {}) {
       flowStore.edges.push(...importedEdges)
     }
 
+    // The canvas is now someone else's flow, so anything the history held about
+    // the previous one is gone
+    flowStore.markImported()
+
     console.log('Flow imported successfully:', {
       nodes: flowData.nodes.length,
       edges: flowData.edges.length,

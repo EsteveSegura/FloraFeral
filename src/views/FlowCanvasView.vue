@@ -142,6 +142,7 @@ import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { useGroupManagement } from '@/composables/useGroupManagement'
 import { useAutoLayout } from '@/composables/useAutoLayout'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { useFlowHistory } from '@/composables/useFlowHistory'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useConnectionDrop } from '@/composables/useConnectionDrop'
 import { useSidePanel, PANEL_TYPES } from '@/composables/useSidePanel'
@@ -184,7 +185,13 @@ watch(
 )
 
 // VueFlow composable
-const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData } = useVueFlow()
+const { findNode, onConnect, onConnectStart, onConnectEnd, addEdges, viewport, onNodeDragStop, fitView, applyNodeChanges, screenToFlowCoordinate, onPaneContextMenu, onNodeContextMenu, updateNodeData, addNodes, removeNodes, removeEdges } = useVueFlow()
+
+// Undo/redo of the whole canvas, minus the results of a generation. Instantiated
+// before the composables it has to close a step for
+const { undo, redo, flush: flushHistory } = useFlowHistory(flowStore, {
+  findNode, addNodes, removeNodes, addEdges, removeEdges, applyNodeChanges, updateNodeData
+})
 
 // Use composables
 const { fileInput, handleExport, handleImport, onFileSelected, getDefaultFilename } = useFlowIO(flowStore, { addEdges })
@@ -249,7 +256,7 @@ const {
 } = useConnectionDrop(flowStore, createNodeAtPosition, screenToFlowCoordinate, { addEdges }, openNodesMenuAt, closeMenu)
 const { onDragStart, onNodeItemClick, onDrop } = useDragAndDrop(viewport, createNodeAtPosition, isNodesMenuOpen, flowStore, { addEdges }, closeNodesMenu, menuOrigin)
 const { handleGroup } = useGroupManagement(flowStore, onNodeDragStop)
-const { handleAutoLayout, undoAutoLayout, canUndoLayout } = useAutoLayout(flowStore, { applyNodeChanges, fitView })
+const { handleAutoLayout } = useAutoLayout(flowStore, { applyNodeChanges, fitView, flushHistory })
 
 // Register right-click handlers for context menus
 onPaneContextMenu(handlePaneContextMenu)
@@ -285,7 +292,7 @@ function onRenameConfirm(label) {
 }
 
 // Setup keyboard shortcuts
-useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, canUndoLayout, copiedNodes, flowStore })
+useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undo, redo, copiedNodes, flowStore })
 
 // Register connection handler - use addEdges directly
 onConnect((params) => {
@@ -330,9 +337,15 @@ function handleClickOutside(event) {
 }
 
 // Validate connection before allowing it (visual feedback)
-function isValidConnection(connection) {
-  const sourceNode = flowStore.nodes.find(n => n.id === connection.source)
-  const targetNode = flowStore.nodes.find(n => n.id === connection.target)
+// VueFlow always hands over its own view of the graph, both while dragging a
+// handle and while parsing new edges. Preferring that over the store is what
+// lets an undo bring back a node and its edges in the same tick: the store runs
+// one flush behind VueFlow's internal state, so a node that has just been added
+// is not in `flowStore.nodes` yet and the edge would be dropped in silence
+function isValidConnection(connection, context = {}) {
+  const allNodes = context.nodes ?? flowStore.nodes
+  const sourceNode = context.sourceNode ?? allNodes.find(n => n.id === connection.source)
+  const targetNode = context.targetNode ?? allNodes.find(n => n.id === connection.target)
 
   if (!sourceNode || !targetNode) return false
 
@@ -340,8 +353,8 @@ function isValidConnection(connection) {
     connection,
     sourceNode,
     targetNode,
-    flowStore.edges,
-    flowStore.nodes  // Pass all nodes for port type validation
+    context.edges ?? flowStore.edges,
+    allNodes  // Pass all nodes for port type validation
   )
 
   if (!validation.valid) {

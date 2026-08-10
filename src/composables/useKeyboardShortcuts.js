@@ -1,13 +1,13 @@
 /**
  * Composable for Keyboard Shortcuts
- * Handles global keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+G, Ctrl+Z)
+ * Handles global keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+G, Ctrl+Z, Ctrl+Y)
  * Copy and paste act on the whole selection, see useCopyPaste
- * Ctrl+Z only reverts an auto layout, see useAutoLayout
+ * Undo and redo cover the whole canvas, see useFlowHistory
  */
 
 import { onMounted, onUnmounted } from 'vue'
 
-export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undoAutoLayout, canUndoLayout, copiedNodes, flowStore }) {
+export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, undo, redo, copiedNodes, flowStore }) {
   /**
    * Handle keyboard shortcuts
    */
@@ -45,13 +45,20 @@ export function useKeyboardShortcuts({ handleCopy, handlePaste, handleGroup, und
       handleGroup()
     }
 
-    // Check for Ctrl+Z or Cmd+Z (Mac) - Undo the last auto layout.
-    // Nothing else in the app is undoable, so with no layout to revert the key
-    // is left alone and the browser keeps its own undo
-    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
-      if (!isEditableField && canUndoLayout.value) {
+    // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y redo.
+    // Inside a text field the browser's own undo wins: the node adopts whatever
+    // the field ends up holding, so the edit is still undoable from the canvas a
+    // step later
+    if ((event.ctrlKey || event.metaKey) && !isEditableField) {
+      // With Shift held, `event.key` for that key is an uppercase 'Z'
+      const key = event.key.toLowerCase()
+
+      if (key === 'z' && !event.shiftKey) {
         event.preventDefault()
-        undoAutoLayout()
+        undo()
+      } else if ((key === 'z' && event.shiftKey) || key === 'y') {
+        event.preventDefault()
+        redo()
       }
     }
   }
